@@ -19,7 +19,7 @@ Lexer.prototype.lex = function (text) {
 
     while (this.index < this.text.length) {
         this.ch = this.text.charAt(this.index)
-        if (this.isNumber(this.ch)) {
+        if (this.isNumber(this.ch) || (this.ch === "." && this.isNumber(this.peek()) ) ) {
             this.readNumber();
         } else {
             throw "Unexpected next character: " + this.ch;
@@ -37,7 +37,7 @@ Lexer.prototype.readNumber = function () {
     var number = '';
     while (this.index < this.text.length) {
         var ch = this.text.charAt(this.index);
-        if (ch === '.' || this.isNumber(ch)) {
+    if (ch === '.' || this.isNumber(ch)) {
             number += ch;
         } else {
             break;
@@ -50,6 +50,10 @@ Lexer.prototype.readNumber = function () {
     })
 }
 
+// 获取下一个字符
+Lexer.prototype.peek = function(){
+    return this.index < this.text.length - 1 ? this.text.charAt(this.index+1) : false;
+}
 
 function AST(lexer) {
     this.lexer = lexer;

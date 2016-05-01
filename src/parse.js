@@ -24,13 +24,17 @@ Lexer.prototype.lex = function (text) {
             (this.ch === "." && this.isNumber(this.peek()))
         ) {
             this.readNumber();
-        } else {
+        }else if( this.isQuete(this.ch)  ) {
+            this.readString();
+        }else {
             throw "Unexpected next character: " + this.ch;
         }
     }
 
     return this.tokens;
 };
+
+
 
 Lexer.prototype.isNumber = function (ch) {
     return '0' <= ch && ch <= '9';
@@ -66,6 +70,37 @@ Lexer.prototype.readNumber = function () {
 Lexer.prototype.isExpOperator = function (ch) {
     return ch === '-' || ch === '+' || this.isNumber(ch);
 }
+
+Lexer.prototype.readString = function(){
+    this.index++;
+    
+    var string = '';
+    
+    while(this.index < this.text.length){
+        var ch = this.text.charAt(this.index);
+        
+        if( this.isQuete(ch) ){
+            this.index++;
+            this.tokens.push({
+                text:string,
+                value:string
+            })
+            return;
+        }else{
+            string += ch;
+        }
+        
+        this.index++;
+    }
+    
+    throw "string : unmatched quote";
+}
+
+
+Lexer.prototype.isQuete = function(ch) {
+    return ch === '\'' || ch === '"'
+}
+
 
 // 获取下一个字符
 Lexer.prototype.peek = function () {
@@ -120,10 +155,18 @@ ASTCompiler.prototype.recurse = function (ast) {
             this.state.body.push('return', this.recurse(ast.body), ';')
             break;
         case AST.Literal:
-            return ast.value;
+            return this.escape(ast.value);
     }
 }
 
+
+ASTCompiler.prototype.escape = function(value){
+    if(_.isString(value)){
+        return '\'' + value + '\''
+    }else{
+        return value;
+    }
+}
 
 function Parser(lexer) {
     this.lexer = lexer;

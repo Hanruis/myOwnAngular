@@ -65,6 +65,15 @@ describe('parse', function() {
             
     });
         
+    
+    
+    it('can parse  a string in single quotes', function() {
+        var fn =  parse("'abc'");
+        expect(fn()).toEqual('abc');
+            
+    });
+            
+        
         
         
         

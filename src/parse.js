@@ -1,4 +1,13 @@
 
+var ESCAPES = {
+    'n':'\n',
+    'f':'\f',
+    'r':'\r',
+    't':'\t',
+    'v':'\v',
+    '\'':'\'',
+    '\"':'"'
+}
 
 function parse(expr) {
     var lexer = new Lexer();
@@ -24,8 +33,8 @@ Lexer.prototype.lex = function (text) {
             (this.ch === "." && this.isNumber(this.peek()))
         ) {
             this.readNumber();
-        }else if( this.isQuete(this.ch)  ) {
-            this.readString();
+        }else if( this.isQuote(this.ch)  ) {
+            this.readString(this.ch);
         }else {
             throw "Unexpected next character: " + this.ch;
         }
@@ -71,21 +80,40 @@ Lexer.prototype.isExpOperator = function (ch) {
     return ch === '-' || ch === '+' || this.isNumber(ch);
 }
 
-Lexer.prototype.readString = function(){
+Lexer.prototype.readString = function(startQuote){
     this.index++;
-    
     var string = '';
-    
+    var escape = false;
     while(this.index < this.text.length){
         var ch = this.text.charAt(this.index);
-        
-        if( this.isQuete(ch) ){
+        if( escape ){
+            
+            if( ch === "u" ){
+                var hex = this.text.substring(this.index +1, this.index+5);
+                if(!hex.match(/[\da-f]{4}/i)){
+                    throw 'Invalid unicode escape';
+                }
+                this.index += 4;
+                string += String.fromCharCode(parseInt(hex,16));
+            }else{
+                var replacement = ESCAPES[ch];
+                if (replacement) {
+                    string += replacement;
+                } else {
+                    string += ch;
+                }
+            }
+            
+            escape = false;
+        }else if( ch === startQuote ){
             this.index++;
             this.tokens.push({
                 text:string,
                 value:string
             })
             return;
+        }else if( ch === '\\' ){
+            escape = true;
         }else{
             string += ch;
         }
@@ -97,7 +125,7 @@ Lexer.prototype.readString = function(){
 }
 
 
-Lexer.prototype.isQuete = function(ch) {
+Lexer.prototype.isQuote = function(ch) {
     return ch === '\'' || ch === '"'
 }
 
@@ -162,10 +190,17 @@ ASTCompiler.prototype.recurse = function (ast) {
 
 ASTCompiler.prototype.escape = function(value){
     if(_.isString(value)){
-        return '\'' + value + '\''
+        return '\'' + value.replace(this.stringEscapeRegex, this.stringEscapeFn) + '\''
     }else{
         return value;
     }
+}
+
+ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-z0-9]/g;
+
+ASTCompiler.prototype.stringEscapeFn = function(c){
+    // 注意补零的操作
+    return '\\u' + ('0000' +c.charCodeAt(0).toString(16) ).slice(-4);
 }
 
 function Parser(lexer) {

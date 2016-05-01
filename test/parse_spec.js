@@ -72,13 +72,45 @@ describe('parse', function() {
         expect(fn()).toEqual('abc');
             
     });
+    
+    
+    it('will not parse a string width mismatching quotes', function() {
+        expect(function(){
+            parse('"abc\'');
+        }).toThrow();
             
+    });
         
-        
-        
-        
-        
-        
+    
+    
+    
+    it('can parse a string with single quotes inside', function() {
+        var fn = parse("'a\\\'b'");
+        expect(fn()).toEqual("a\'b");
+    });
+       
+       
+    
+    it('can parse a string width double quotes inside', function() {
+        var fn = parse('"a\\\"b"');
+        expect(fn()).toEqual('a\"b');
+            
+    });
+       
+    
+    it('will parse a string width unicode escapes', function() {
+        var fn = parse('"\\u00A0"');
+        expect(fn()).toEqual('\u00A0');
+            
+    });
+
+    
+    it('will not parse a string with invalid unicode escapes', function() {
+        expect(function(){
+            parse('"\\u00T0"')
+        }).toThrow();
+    });
+                                
             
 });
     

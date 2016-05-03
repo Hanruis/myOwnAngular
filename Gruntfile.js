@@ -17,7 +17,9 @@ module.exports = function(grunt){
                 },
                 browser:true,
                 devel:true,
-                asi:true
+                asi:true,
+                undef: true
+                // unused: true
             }
         },
         testem: {
@@ -25,7 +27,7 @@ module.exports = function(grunt){
                 options: {
                     framework: 'jasmine2',
                     launch_in_dev: ['PhantomJS'],
-                    before_tests: 'grunt jshint',
+                    // before_tests: 'grunt jshint',
                     serve_files: [
                         'node_modules/lodash/lodash.min.js',
                         'node_modules/jquery/dist/jquery.js',
@@ -42,7 +44,7 @@ module.exports = function(grunt){
         }
     });
     
-    grunt.loadNpmTasks("grunt-contrib-jshint");
+    // grunt.loadNpmTasks("grunt-contrib-jshint");
     grunt.loadNpmTasks('grunt-contrib-testem');
     grunt.registerTask('default', ['testem:run:unit']);
 }

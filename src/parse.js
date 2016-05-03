@@ -1,12 +1,12 @@
 
 var ESCAPES = {
-    'n':'\n',
-    'f':'\f',
-    'r':'\r',
-    't':'\t',
-    'v':'\v',
-    '\'':'\'',
-    '\"':'"'
+    'n': '\n',
+    'f': '\f',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+    '\'': '\'',
+    '\"': '"'
 }
 
 function parse(expr) {
@@ -33,9 +33,11 @@ Lexer.prototype.lex = function (text) {
             (this.ch === "." && this.isNumber(this.peek()))
         ) {
             this.readNumber();
-        }else if( this.isQuote(this.ch)  ) {
+        } else if (this.isQuote(this.ch)) {
             this.readString(this.ch);
-        }else {
+        } else if (this.isIdent(this.ch)) {
+            this.readIdent()
+        } else {
             throw "Unexpected next character: " + this.ch;
         }
     }
@@ -57,14 +59,14 @@ Lexer.prototype.readNumber = function () {
             number += ch;
         } else {
             var nextCh = this.peek();
-            var prevCh = number.charAt(number.length - 1 );
+            var prevCh = number.charAt(number.length - 1);
             if (ch === "e" && this.isExpOperator(nextCh)) {
                 number += ch;
-            }else if( this.isExpOperator(ch) && prevCh === 'e' && nextCh  && this.isNumber(nextCh) ){
+            } else if (this.isExpOperator(ch) && prevCh === 'e' && nextCh && this.isNumber(nextCh)) {
                 number += ch;
-            }else if( this.isExpOperator(ch) && prevCh === 'e' && (!nextCh || !this.isNumber(nextCh) ) ){
+            } else if (this.isExpOperator(ch) && prevCh === 'e' && (!nextCh || !this.isNumber(nextCh))) {
                 throw "error";
-            }else{
+            } else {
                 break;
             }
         }
@@ -80,22 +82,22 @@ Lexer.prototype.isExpOperator = function (ch) {
     return ch === '-' || ch === '+' || this.isNumber(ch);
 }
 
-Lexer.prototype.readString = function(startQuote){
+Lexer.prototype.readString = function (startQuote) {
     this.index++;
     var string = '';
     var escape = false;
-    while(this.index < this.text.length){
+    while (this.index < this.text.length) {
         var ch = this.text.charAt(this.index);
-        if( escape ){
-            
-            if( ch === "u" ){
-                var hex = this.text.substring(this.index +1, this.index+5);
-                if(!hex.match(/[\da-f]{4}/i)){
+        if (escape) {
+
+            if (ch === "u") {
+                var hex = this.text.substring(this.index + 1, this.index + 5);
+                if (!hex.match(/[\da-f]{4}/i)) {
                     throw 'Invalid unicode escape';
                 }
                 this.index += 4;
-                string += String.fromCharCode(parseInt(hex,16));
-            }else{
+                string += String.fromCharCode(parseInt(hex, 16));
+            } else {
                 var replacement = ESCAPES[ch];
                 if (replacement) {
                     string += replacement;
@@ -103,29 +105,29 @@ Lexer.prototype.readString = function(startQuote){
                     string += ch;
                 }
             }
-            
+
             escape = false;
-        }else if( ch === startQuote ){
+        } else if (ch === startQuote) {
             this.index++;
             this.tokens.push({
-                text:string,
-                value:string
+                text: string,
+                value: string
             })
             return;
-        }else if( ch === '\\' ){
+        } else if (ch === '\\') {
             escape = true;
-        }else{
+        } else {
             string += ch;
         }
-        
+
         this.index++;
     }
-    
+
     throw "string : unmatched quote";
 }
 
 
-Lexer.prototype.isQuote = function(ch) {
+Lexer.prototype.isQuote = function (ch) {
     return ch === '\'' || ch === '"'
 }
 
@@ -134,6 +136,29 @@ Lexer.prototype.isQuote = function(ch) {
 Lexer.prototype.peek = function () {
     return this.index < this.text.length - 1 ? this.text.charAt(this.index + 1) : false;
 }
+
+
+Lexer.prototype.isIdent = function (ch) {
+    return /[a-zA-Z_\$]/.test(ch);
+}
+
+
+Lexer.prototype.readIdent = function () {
+    var text = '';
+    while (this.index < this.text.length) {
+        var ch = this.text.charAt(this.index);
+        if (this.isIdent(ch) || this.isNumber(ch)) {
+            text += ch;
+        } else {
+            break;
+        }
+        this.index++;
+    }
+    var token = { text: text };
+
+    this.tokens.push(token)
+}
+
 
 function AST(lexer) {
     this.lexer = lexer;
@@ -150,8 +175,16 @@ AST.prototype.ast = function (text) {
 AST.prototype.program = function () {
     return {
         type: AST.Program,
-        body: this.constant()
+        body: this.primary()
     };
+}
+
+AST.prototype.primary = function(){
+    if(this.constants.hasOwnProperty(this.tokens[0].text)){
+        return this.constants[this.tokens[0].text]
+    }else{
+        return this.constant();
+    }
 }
 
 AST.prototype.constant = function () {
@@ -160,6 +193,17 @@ AST.prototype.constant = function () {
         value: this.tokens[0].value
     }
 }
+
+
+AST.prototype.constants = {
+    'null': { type: AST.Literal, value: null },
+    'true': { type: AST.Literal, value: true },
+    'false': { type: AST.Literal, value: false }
+}
+
+
+
+
 
 
 function ASTCompiler(astBuilder) {
@@ -188,20 +232,25 @@ ASTCompiler.prototype.recurse = function (ast) {
 }
 
 
-ASTCompiler.prototype.escape = function(value){
-    if(_.isString(value)){
+ASTCompiler.prototype.escape = function (value) {
+    if (_.isString(value)) {
         return '\'' + value.replace(this.stringEscapeRegex, this.stringEscapeFn) + '\''
-    }else{
+    } else if( _.isNull(value) ){
+        return 'null'
+    } else {
         return value;
     }
 }
 
 ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-z0-9]/g;
 
-ASTCompiler.prototype.stringEscapeFn = function(c){
+ASTCompiler.prototype.stringEscapeFn = function (c) {
     // 注意补零的操作
-    return '\\u' + ('0000' +c.charCodeAt(0).toString(16) ).slice(-4);
+    return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
 }
+
+
+
 
 function Parser(lexer) {
     this.lexer = lexer;

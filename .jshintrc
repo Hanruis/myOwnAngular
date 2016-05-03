@@ -1,0 +1,18 @@
+{
+    "asi":true,
+    "eqeqeq": true,
+    "undef": true,
+    "unused": true,
+    "expr": true,
+    "sub":true,
+    "globals": {
+        "define":true,
+        "require":true,
+        "export":true,
+        "_":true
+    },
+    "browser": true,
+    "jasmine":true,
+    // "strict": true,
+    "node": true
+}

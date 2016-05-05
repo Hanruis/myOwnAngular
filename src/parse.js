@@ -37,6 +37,8 @@ Lexer.prototype.lex = function (text) {
             this.readString(this.ch);
         } else if (this.isIdent(this.ch)) {
             this.readIdent()
+        } else if(this.isWhitespace(this.ch)){
+            this.index++;
         } else {
             throw "Unexpected next character: " + this.ch;
         }
@@ -158,6 +160,13 @@ Lexer.prototype.readIdent = function () {
 
     this.tokens.push(token)
 }
+
+
+Lexer.prototype.isWhitespace = function(ch){
+    return /(\s|\r|\t|\n|\v|\u00A0)/.test(ch)
+}
+
+
 
 
 function AST(lexer) {

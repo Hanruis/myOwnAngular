@@ -135,7 +135,13 @@ describe('parse', function() {
     });
         
         
-        
+    
+    it('ignores whitespace', function() {
+        var fn = parse(' \n42');
+        expect(fn()).toBe(42);
+            
+    });
+            
             
 });
     

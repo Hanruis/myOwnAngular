@@ -148,6 +148,14 @@ describe('parse', function() {
         var fn = parse("[]");
         expect(fn()).toEqual([]);
     });
+    
+    
+    it('will parse a non-empty array', function() {
+        var fn = parse('[1,"two",[3], true]');
+        expect(fn()).toEqual([1,"two",[3], true]);
+            
+    });
+        
         
 
             

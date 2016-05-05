@@ -35,7 +35,7 @@ Lexer.prototype.lex = function (text) {
             this.readNumber();
         } else if (this.isQuote(this.ch)) {
             this.readString(this.ch);
-        } else if(this.ch==="["  ||  this.ch === "]" ){
+        } else if(this.ch==="["  ||  this.ch === "]" || this.ch === "," ){
             this.tokens.push({
                 text:this.ch
             });
@@ -198,7 +198,7 @@ AST.prototype.primary = function(){
     if( this.expect('[') ){
         return this.arrayDeclaration();
     }else if(this.constants.hasOwnProperty(this.tokens[0].text)){
-        return this.constants[this.tokens[0].text]
+        return this.constants[this.consume().text]
     }else{
         return this.constant();
     }
@@ -207,7 +207,7 @@ AST.prototype.primary = function(){
 AST.prototype.constant = function () {
     return {
         type: AST.Literal,
-        value: this.tokens[0].value
+        value: this.consume().value
     }
 }
 
@@ -219,11 +219,13 @@ AST.prototype.constants = {
 }
 
 AST.prototype.expect = function(e){
-    if( this.tokens.length  > 0 ){
-        if( this.tokens[0].text === e || !e ){
-            return this.tokens.shift();
-        }
+    
+    var token = this.peek(e);
+    
+    if( token ){
+         return this.tokens.shift();
     }
+
 }
 
 AST.prototype.consume = function(e){
@@ -235,13 +237,30 @@ AST.prototype.consume = function(e){
 }
 
 AST.prototype.arrayDeclaration =  function(){
+    
+    var elements = [];
+    
+    if( !this.peek(']') ){
+        do{
+            elements.push(this.primary());
+        }while(this.expect(','));
+    }
+    
     this.consume(']');
     return {
-        type:AST.ArrayExpression
+        type:AST.ArrayExpression,
+        elements:elements
     }
 }
 
-
+AST.prototype.peek = function(e){
+    if( this.tokens.length > 0 ){
+        var text =  this.tokens[0].text;
+        if( text === e || !e ){
+            return this.tokens[0];
+        }
+    }
+}
 
 
 
@@ -263,6 +282,7 @@ ASTCompiler.prototype.compile = function (text) {
 };
 
 ASTCompiler.prototype.recurse = function (ast) {
+    var self = this;
     switch (ast.type) {
         case AST.Program:
             this.state.body.push('return', this.recurse(ast.body), ';')
@@ -270,7 +290,10 @@ ASTCompiler.prototype.recurse = function (ast) {
         case AST.Literal:
             return this.escape(ast.value);
         case AST.ArrayExpression:
-            return '[]';
+            var elements = _.map(ast.elements, function(element){
+                return self.recurse(element);
+            });
+            return  '['+ elements.join(',')  + ']';
     }
 }
 

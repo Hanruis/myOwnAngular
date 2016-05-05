@@ -155,6 +155,14 @@ describe('parse', function() {
         expect(fn()).toEqual([1,"two",[3], true]);
             
     });
+    
+    
+    it('will parse an array with trailing commas', function() {
+        var fn = parse('[1,2,3,]');
+        expect(fn()).toEqual([1,2,3]);
+            
+    });
+        
         
         
 

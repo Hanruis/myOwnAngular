@@ -142,6 +142,16 @@ describe('parse', function() {
             
     });
             
+    
+    
+    it('will parse an empty array', function() {
+        var fn = parse("[]");
+        expect(fn()).toEqual([]);
+    });
+        
+
             
 });
+
+
     

@@ -30,12 +30,12 @@ Lexer.prototype.lex = function (text) {
         this.ch = this.text.charAt(this.index)
         if (
             this.isNumber(this.ch) ||
-            (this.ch === "." && this.isNumber(this.peek()))
+            (this.is(".") && this.isNumber(this.peek()))
         ) {
             this.readNumber();
         } else if (this.isQuote(this.ch)) {
             this.readString(this.ch);
-        } else if(this.ch==="["  ||  this.ch === "]" || this.ch === "," ){
+        } else if( this.is("[],{}:") ){
             this.tokens.push({
                 text:this.ch
             });
@@ -171,6 +171,10 @@ Lexer.prototype.isWhitespace = function(ch){
     return /(\s|\r|\t|\n|\v|\u00A0)/.test(ch)
 }
 
+// 不明白作者这里为什么要用 indexOf 而不是用 === 
+Lexer.prototype.is = function(chs){
+    return chs.indexOf(this.ch) >= 0;
+}
 
 
 
@@ -181,6 +185,8 @@ function AST(lexer) {
 AST.Program = "Program"
 AST.Literal = "Literal"
 AST.ArrayExpression = "ArrayExpression"
+AST.ObjectExpression = "ObjectExpression"
+AST.Property = "Property";
 
 AST.prototype.ast = function (text) {
     this.tokens = this.lexer.lex(text);
@@ -197,7 +203,9 @@ AST.prototype.program = function () {
 AST.prototype.primary = function(){
     if( this.expect('[') ){
         return this.arrayDeclaration();
-    }else if(this.constants.hasOwnProperty(this.tokens[0].text)){
+    }else if( this.expect("{") ){
+        return this.object();
+    } else if(this.constants.hasOwnProperty(this.tokens[0].text)){
         return this.constants[this.consume().text]
     }else{
         return this.constant();
@@ -265,6 +273,33 @@ AST.prototype.peek = function(e){
     }
 }
 
+AST.prototype.object = function(){
+        
+    var properties = [];    
+    
+    if( !this.peek("}") ){
+        
+        
+        do{
+            var prop = {
+                type:AST.Property
+            };
+            
+            prop.key =  this.constant();
+            this.consume(":")
+            prop.value = this.primary();
+            properties.push(prop)
+        }while(this.expect(","))
+        
+        
+    }
+    
+    this.consume("}");
+    return {
+        type:AST.ObjectExpression,
+        properties:properties
+    }
+}
 
 
 
@@ -297,6 +332,13 @@ ASTCompiler.prototype.recurse = function (ast) {
                 return self.recurse(element);
             });
             return  '['+ elements.join(',')  + ']';
+        case AST.ObjectExpression:
+            var properties = _.map(ast.properties, function(prop){
+                var key = self.escape(prop.key.value);
+                var value = self.recurse(prop.value);
+                return key + ":" + value
+            })
+            return "{" + properties.join(",") + "}";
     }
 }
 

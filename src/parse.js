@@ -1,3 +1,5 @@
+// 其实不习惯这种面向对象的写法;
+
 
 var ESCAPES = {
     'n': '\n',
@@ -161,7 +163,10 @@ Lexer.prototype.readIdent = function () {
         }
         this.index++;
     }
-    var token = { text: text };
+    var token = { 
+        text: text,
+        identifier:true
+    };
 
     this.tokens.push(token)
 }
@@ -187,6 +192,8 @@ AST.Literal = "Literal"
 AST.ArrayExpression = "ArrayExpression"
 AST.ObjectExpression = "ObjectExpression"
 AST.Property = "Property";
+AST.Identifier = "Identifier";
+
 
 AST.prototype.ast = function (text) {
     this.tokens = this.lexer.lex(text);
@@ -279,13 +286,17 @@ AST.prototype.object = function(){
     
     if( !this.peek("}") ){
         
-        
         do{
             var prop = {
                 type:AST.Property
             };
             
-            prop.key =  this.constant();
+            if( this.peek().identifier ){
+                prop.key = this.identifier();
+            }else{
+                prop.key =  this.constant();
+            }
+            
             this.consume(":")
             prop.value = this.primary();
             properties.push(prop)
@@ -298,6 +309,13 @@ AST.prototype.object = function(){
     return {
         type:AST.ObjectExpression,
         properties:properties
+    }
+}
+
+AST.prototype.identifier = function(){
+    return {
+        type:AST.Identifier,
+        name:this.consume().text
     }
 }
 
@@ -334,11 +352,13 @@ ASTCompiler.prototype.recurse = function (ast) {
             return  '['+ elements.join(',')  + ']';
         case AST.ObjectExpression:
             var properties = _.map(ast.properties, function(prop){
-                var key = self.escape(prop.key.value);
+                var key = prop.key.type === AST.Identifier ?  prop.key.name : self.escape(prop.key.value) 
                 var value = self.recurse(prop.value);
                 return key + ":" + value
             })
             return "{" + properties.join(",") + "}";
+        // case AST.Identifier:
+        //     return ast.name;
     }
 }
 

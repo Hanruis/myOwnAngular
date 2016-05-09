@@ -193,7 +193,7 @@ AST.ArrayExpression = "ArrayExpression"
 AST.ObjectExpression = "ObjectExpression"
 AST.Property = "Property";
 AST.Identifier = "Identifier";
-
+AST.ThisExpression = "ThisExpression";
 
 AST.prototype.ast = function (text) {
     this.tokens = this.lexer.lex(text);
@@ -232,7 +232,8 @@ AST.prototype.constant = function () {
 AST.prototype.constants = {
     'null': { type: AST.Literal, value: null },
     'true': { type: AST.Literal, value: true },
-    'false': { type: AST.Literal, value: false }
+    'false': { type: AST.Literal, value: false },
+    'this': {type:AST.ThisExpression}
 }
 
 AST.prototype.expect = function(e){
@@ -366,6 +367,8 @@ ASTCompiler.prototype.recurse = function (ast) {
             var intoId = this.nextId();
             this.if_("s", this.assign(intoId,this.nonComputedMember('s', ast.right) ) )
             return intoId;
+        case AST.ThisExpression:
+            return 's';    
     }
 }
 

@@ -238,6 +238,20 @@ describe('parse', function () {
         expect(fn()).toBe(42);
     });
         
+        
+    
+    it('looks up a 4-part identifier path from the scope', function() {
+        var fn = parse("akey.bkey.ckey");
+        expect(fn({
+            akey:{
+                bkey:{
+                    ckey:10
+                }
+            }
+        })).toBe(10);
+            
+    });
+        
 
 
 

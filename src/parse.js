@@ -186,7 +186,7 @@ Lexer.prototype.is = function(chs){
 function AST(lexer) {
     this.lexer = lexer;
 }
-
+ 
 AST.Program = "Program"
 AST.Literal = "Literal"
 AST.ArrayExpression = "ArrayExpression"
@@ -214,6 +214,8 @@ AST.prototype.primary = function(){
         return this.object();
     } else if(this.constants.hasOwnProperty(this.tokens[0].text)){
         return this.constants[this.consume().text]
+    }else if( this.peek().identifier ){
+        return this.identifier()
     }else{
         return this.constant();
     }
@@ -315,7 +317,7 @@ AST.prototype.object = function(){
 AST.prototype.identifier = function(){
     return {
         type:AST.Identifier,
-        name:this.consume().text
+        right:this.consume().text
     }
 }
 
@@ -329,11 +331,14 @@ function ASTCompiler(astBuilder) {
 ASTCompiler.prototype.compile = function (text) {
     var ast = this.astBuilder.ast(text);
     this.state = {
-        body: []
+        body: [],
+        nextId:0,
+        vars:[]
     }
     this.recurse(ast);
     /* jshint -W054 */
-    return new Function(this.state.body.join(' '));
+    var varExp = this.state.vars.length ? "var " + this.state.vars.join(",") + ";" :""
+    return new Function('s',varExp + this.state.body.join(' '));
     /* jshint +W054 */
 };
 
@@ -352,13 +357,15 @@ ASTCompiler.prototype.recurse = function (ast) {
             return  '['+ elements.join(',')  + ']';
         case AST.ObjectExpression:
             var properties = _.map(ast.properties, function(prop){
-                var key = prop.key.type === AST.Identifier ?  prop.key.name : self.escape(prop.key.value) 
+                var key = prop.key.type === AST.Identifier ?  prop.key.right : self.escape(prop.key.value) 
                 var value = self.recurse(prop.value);
                 return key + ":" + value
             })
             return "{" + properties.join(",") + "}";
-        // case AST.Identifier:
-        //     return ast.name;
+        case AST.Identifier:
+            var intoId = this.nextId();
+            this.if_("s", this.assign(intoId,this.nonComputedMember('s', ast.right) ) )
+            return intoId;
     }
 }
 
@@ -380,6 +387,24 @@ ASTCompiler.prototype.stringEscapeFn = function (c) {
     return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
 }
 
+// 作者这里用了 left， right 来表示，感觉不是很好
+ASTCompiler.prototype.nonComputedMember = function(left, right){
+    return "("+ left +")."  + right;   
+}
+
+ASTCompiler.prototype.if_ = function(test, consequent){
+    this.state.body.push('if(', test, '){', consequent ,'}');
+};
+
+ASTCompiler.prototype.assign = function(id, value){
+    return id + "=" + value + ";";
+};
+
+ASTCompiler.prototype.nextId = function(){
+    var id = 'v'+ this.nextId++;
+    this.state.vars.push(id)
+    return id;
+}
 
 
 

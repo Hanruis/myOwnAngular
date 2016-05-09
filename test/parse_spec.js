@@ -190,7 +190,21 @@ describe('parse', function() {
     });
            
     
-            
+    
+    it('looks up an attribute from the scope', function() {
+        var fn = parse("akey");
+        
+        expect(fn({"akey":1})).toBe(1);
+        expect(fn({})).toBeUndefined();
+    });
+    
+    
+    it('returns undefined when looking up attribute from undefined', function() {
+        var fn = parse("akey");
+        expect(fn()).toBeUndefined();
+    });
+        
+                
         
 
             

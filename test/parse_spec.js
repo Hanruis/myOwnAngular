@@ -286,8 +286,6 @@ describe('parse', function() {
     it('uses locals instead of scope first part matches', function() {
         var fn = parse('akey.bkey');
 
-        console.log(fn.toString())
-
         var scope = {
             akey: {
                 bkey: 10
@@ -303,4 +301,45 @@ describe('parse', function() {
     });
 
 
+    
+    it('parses a simple computed property access', function() {
+        var fn = parse('akey["anotherKey"]');
+        
+                console.log( fn.toString() )
+        
+        expect(fn({
+            akey:{
+                anotherKey:10
+            }
+        })).toBe(10);
+    });
+        
+    
+    it('parses a computed numeric array access', function() {
+        var fn = parse("anArray[1]")
+        expect(fn({
+            anArray:[1,23,34]
+        })).toBe(23);
+            
+    });
+    
+    
+    
+    it('parse computed access with another access as property', function() {
+        var fn = parse("akey[bkey['ckey']]");
+        
+        expect(fn({
+            akey:{
+                dkey:10
+            },
+            bkey:{
+                ckey:"dkey"
+            }
+        })).toBe(10);
+            
+    });
+                
+        
+
 })
+

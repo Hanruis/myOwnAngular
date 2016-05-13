@@ -338,6 +338,33 @@ describe('parse', function() {
         })).toBe(10);
             
     });
+           
+    
+    
+    it('parse a function call', function() {
+        var fn = parse("afunction()");
+        expect(fn({
+            afunction:function(){
+                return 41
+            }
+        })).toBe(41);
+            
+    });
+    
+    
+    it('parse a function call width a single number arguments', function() {
+        var fn = parse("afunction(1)");
+        
+        console.log( fn.toString() )
+        
+        expect(fn({
+            afunction:function(num){
+                return 41 + num
+            }
+        })).toBe(42);
+    });
+        
+               
                 
         
 

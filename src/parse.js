@@ -37,7 +37,7 @@ Lexer.prototype.lex = function(text) {
             this.readNumber();
         } else if (this.isQuote(this.ch)) {
             this.readString(this.ch);
-        } else if (this.is("[],{}:.")) {
+        } else if (this.is("[],{}:.()")) {
             this.tokens.push({
                 text: this.ch
             });
@@ -195,6 +195,7 @@ AST.Property = "Property";
 AST.Identifier = "Identifier";
 AST.ThisExpression = "ThisExpression";
 AST.MemberExpression = "MemberExpression";
+AST.CallExpression = "CallExpression";
 
 
 AST.prototype.ast = function(text) {
@@ -224,7 +225,7 @@ AST.prototype.primary = function() {
     }
     
     var next ;
-    while ( (next = this.expect(".","[")) ){
+    while ( (next = this.expect(".","[","(")) ){
         
         if( next.text === '.' ){
             primary = {
@@ -241,6 +242,13 @@ AST.prototype.primary = function() {
                 computed:true
             }
             this.consume("]");
+        }else if( next.text === "(" ){
+            primary = {
+                type: AST.CallExpression,
+                callee: primary,
+                arguments:this.parseArguments() // 2016.5.12 晚，写到这里，parse 函数参数
+            }
+            this.consume(")");
         }
     }
 
@@ -363,6 +371,20 @@ AST.prototype.identifier = function() {
 }
 
 
+AST.prototype.parseArguments = function(){
+   
+    var argumentsList = [];
+   
+    if( !this.peek(")") ){
+        do{
+            argumentsList.push(this.primary());
+        }while(this.expect(","))
+    }
+    return argumentsList
+   
+}
+
+
 
 
 function ASTCompiler(astBuilder) {
@@ -432,10 +454,13 @@ ASTCompiler.prototype.recurse = function(ast) {
                     this.assign(intoId, this.nonComputedMember(left, ast.property.name))
                 ); 
             }
-            
-
             return intoId;
-
+        case  AST.CallExpression:
+            var callee = this.recurse(ast.callee);
+            var args = _.map(ast.arguments, function(arg){
+                return self.recurse(arg);
+            })
+            return callee + " && " + callee + "( " + args.join(",") + " )";
     }
 }
 

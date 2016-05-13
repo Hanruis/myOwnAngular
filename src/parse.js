@@ -405,7 +405,7 @@ ASTCompiler.prototype.compile = function(text) {
     /* jshint +W054 */
 };
 
-ASTCompiler.prototype.recurse = function(ast) {
+ASTCompiler.prototype.recurse = function(ast, context) {
     var self = this;
     var intoId;
     switch (ast.type) {
@@ -442,24 +442,48 @@ ASTCompiler.prototype.recurse = function(ast) {
             intoId = this.nextId();
             var left = this.recurse(ast.object);
             
+            if( context ){
+                context.context = left;
+            }
+            
             if( ast.computed ){
                 var right = this.recurse(ast.property);
                 this.if_(
                     left,
                     this.assign(intoId, this.computedMember(left, right))
                 ); 
+                if( context ){
+                    context.name = right;
+                    context.computed = true;
+                }
+                
             }else{
                 this.if_(
                     left,
                     this.assign(intoId, this.nonComputedMember(left, ast.property.name))
                 ); 
+                if( context ){
+                    context.name = ast.property.name;
+                    context.computed = false;
+                }
+                
             }
             return intoId;
         case  AST.CallExpression:
-            var callee = this.recurse(ast.callee);
+            var callContext = {};
+            var callee = this.recurse(ast.callee, callContext);
             var args = _.map(ast.arguments, function(arg){
                 return self.recurse(arg);
             })
+            if( callContext.name ){
+                if( callContext.computed ){
+                    callee = this.computedMember(callContext.context, callContext.name)
+                }else{
+                 callee = this.nonComputedMember(callContext.context, callContext.name)
+                }
+            }
+            
+            
             return callee + " && " + callee + "( " + args.join(",") + " )";
     }
 }

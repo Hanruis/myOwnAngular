@@ -388,14 +388,40 @@ describe('parse', function () {
 
         }
         var fn = parse("anObj.bfunction()");
-        
-        console.log( fn.toString() )
-        
+               
         expect(fn(scope)).toBe(10);
-            
-
+           
     });
-
+    
+    
+    
+    it('binds bare fucntions to the scope', function() {
+        var scope = {
+            afunction:function(){
+                return this
+            }
+        }
+        
+        var fn = parse("afunction()");
+        
+        expect(fn(scope)).toBe(scope);
+            
+    });
+        
+    
+    it('binds bare fucntions on locals to the locals', function() {
+        var scope = {};
+        var locals = {
+            afunction:function(){
+                return this
+            }
+        }
+        
+        var fn = parse("afunction()");
+        
+        expect(fn(scope, locals)).toBe(locals);
+            
+    });
 
 
 

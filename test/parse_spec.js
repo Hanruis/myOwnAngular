@@ -458,7 +458,6 @@ describe('parse', function () {
             }
         }
 
-        console.log(fn.toString())
         fn(scope);
 
         expect(scope.akey.bkey).toBe(100);

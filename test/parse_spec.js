@@ -373,10 +373,10 @@ describe('parse', function () {
 
         }
         var fn = parse("anObj['bfunction']()");
-        
+
         expect(fn(scope)).toBe(10);
     });
-    
+
     it('calls methods accessed as non-computed properties', function () {
         var scope = {
             anObj: {
@@ -388,42 +388,102 @@ describe('parse', function () {
 
         }
         var fn = parse("anObj.bfunction()");
-               
+
         expect(fn(scope)).toBe(10);
-           
+
     });
-    
-    
-    
-    it('binds bare fucntions to the scope', function() {
+
+
+
+    it('binds bare fucntions to the scope', function () {
         var scope = {
-            afunction:function(){
+            afunction: function () {
                 return this
             }
         }
-        
+
         var fn = parse("afunction()");
-        
+
         expect(fn(scope)).toBe(scope);
-            
+
     });
-        
-    
-    it('binds bare fucntions on locals to the locals', function() {
+
+
+    it('binds bare fucntions on locals to the locals', function () {
         var scope = {};
         var locals = {
-            afunction:function(){
+            afunction: function () {
                 return this
             }
         }
-        
+
         var fn = parse("afunction()");
-        
+
         expect(fn(scope, locals)).toBe(locals);
-            
+
     });
 
 
+    it('parse a simple attribute assignment', function () {
+        var fn = parse("akey = 10");
+        var scope = {};
+        fn(scope)
+
+        expect(scope.akey).toBe(10);
+
+    });
+
+
+
+    it('can assign any primary expression', function () {
+        var fn = parse("akey =  afunction()");
+        var scope = {
+            afunction: function () {
+                return 11
+            }
+        };
+
+        fn(scope)
+        expect(scope.akey).toBe(11);
+
+    });
+
+
+    it('it can assign computed object property', function () {
+        var fn = parse("akey[\"bkey\"] = ckey[\"dkey\"] ")
+        var scope = {
+            akey: {},
+            ckey: {
+                dkey: 100
+            }
+        }
+
+        console.log(fn.toString())
+        fn(scope);
+
+        expect(scope.akey.bkey).toBe(100);
+
+    });
+
+    it('can assign a non-computed object property', function () {
+        var fn = parse('anObject.anAttribute = 42');
+        var scope = { anObject: {} };
+        fn(scope);
+        expect(scope.anObject.anAttribute).toBe(42);
+    });
+    it('can assign a nested object property', function () {
+        var fn = parse('anArray[0].anAttribute = 42');
+        var scope = { anArray: [{}] };
+        fn(scope);
+        expect(scope.anArray[0].anAttribute).toBe(42);
+    });
+
+    it('creates the objects in the assignment path that do not exist', function () {
+        var fn = parse('some["nested"].property.path = 42');
+        var scope = {};
+        fn(scope);
+        expect(scope.some.nested.property.path).toBe(42);
+    });
 
 })
 

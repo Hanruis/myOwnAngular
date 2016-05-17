@@ -443,6 +443,7 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
             })
             return "{" + properties.join(",") + "}";
         case AST.Identifier:
+            ensureSafeMamberName(ast.name)
             intoId = this.nextId();
             this.if_(this.getHasOwnProperty("l", ast.name),
                 this.assign(intoId, this.nonComputedMember("l", ast.name))
@@ -473,6 +474,7 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
             intoId = this.nextId();
             var left = this.recurse(ast.object, undefined, create);
             
+            
             if( context ){
                 context.context = left;
             }
@@ -496,6 +498,7 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
                 }
                 
             }else{
+                ensureSafeMamberName(ast.property.name)
                 
                 if( create ){
                     this.if_(this.not(this.nonComputedMember(left, ast.property.name)),
@@ -603,4 +606,19 @@ function Parser(lexer) {
 
 Parser.prototype.parse = function(text) {
     return this.ASTCompiler.compile(text);
+}
+
+
+function ensureSafeMamberName(name) {
+    var unSafePropList = [
+        "constructor",
+        "__proto__",
+        "__defineGetter__",
+        "__defineSetter__",
+        "__lookupGetter__",
+        "__lookupSetter__",
+    ]
+    if( _.indexOf(unSafePropList, name) > -1 ){
+        throw "Attempting to access a disallowed filed in Angular expressions!"
+    } 
 }

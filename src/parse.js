@@ -17,7 +17,16 @@ var OPERATROS = {
     "-":true,
     "*":true,
     "/":true,
-    "%":true
+    "%":true,
+    "=":true,
+    "==":true,
+    "!=":true,
+    "===":true,
+    "!==":true,
+    ">":true,
+    ">=":true,
+    "<":true,
+    "<=":true
 }
 
 
@@ -47,7 +56,7 @@ Lexer.prototype.lex = function(text) {
             this.readNumber();
         } else if (this.isQuote(this.ch)) {
             this.readString(this.ch);
-        } else if (this.is("[],{}:.()=")) {
+        } else if (this.is("[],{}:.()")) {
             this.tokens.push({
                 text: this.ch
             });
@@ -57,12 +66,21 @@ Lexer.prototype.lex = function(text) {
         } else if (this.isWhitespace(this.ch)) {
             this.index++;
         } else {
-            var op = OPERATROS[this.ch];
-            if(op){
+            
+            var ch = this.ch;
+            var ch2 = this.ch + this.peek();
+            var ch3 = this.ch + this.peek() + this.peek(2);
+            
+            var op = OPERATROS[ch];
+            var op2 = OPERATROS[ch2];
+            var op3 = OPERATROS[ch3]; 
+            
+            if(op || op2 || op3 ){
+                var token = op3 ? ch3 : ( op2 ? ch2 : ch )
                 this.tokens.push({
-                    text:this.ch
+                    text:token
                 })
-                this.index++
+                this.index += token.length;
             }else{
                 throw "Unexpected next character: " + this.ch;
             }
@@ -162,8 +180,9 @@ Lexer.prototype.isQuote = function(ch) {
 
 
 // 获取下一个字符
-Lexer.prototype.peek = function() {
-    return this.index < this.text.length - 1 ? this.text.charAt(this.index + 1) : false;
+Lexer.prototype.peek = function(n) {
+    n = n ||1;
+    return this.index + n < this.text.length  ? this.text.charAt(this.index + n) : false;
 }
 
 
@@ -203,6 +222,8 @@ Lexer.prototype.is = function(chs) {
 
 
 
+
+
 function AST(lexer) {
     this.lexer = lexer;
 }
@@ -234,12 +255,12 @@ AST.prototype.program = function() {
 
 AST.prototype.assignment = function(){
     
-    var left = this.multiplicative();
+    var left = this.equality();
     if( this.expect("=") ){
         return {
             type:AST.AssignmentExpression,
             left:left,
-            right:this.multiplicative()
+            right:this.equality()
         }
     }
     return left;
@@ -436,8 +457,8 @@ AST.prototype.unary = function(){
 AST.prototype.multiplicative = function(){
     var left = this.unary();
     var token;
-    if( token = this.expect("*","/","%") ){
-        return {
+    while( token = this.expect("*","/","%") ){
+        left = {
             type:AST.BinaryExpression,
             left:left,
             operator:token.text,
@@ -448,8 +469,47 @@ AST.prototype.multiplicative = function(){
     return left;
 }
 
+AST.prototype.additive = function(){
+    var left = this.multiplicative();
+    var token;
+    while(token = this.expect("+","-")){
+        left = {
+            type:AST.BinaryExpression,
+            left:left,
+            right:this.multiplicative(),
+            operator:token.text
+        }
+    }
+    return left;
+}
 
+AST.prototype.equality = function(){
+    var left = this.relational();
+    var token;
+    while( token = this.expect("==","===","!=","!==") ){
+        left = {
+            left:left,
+            right:this.relational(),
+            type:AST.BinaryExpression,
+            operator:token.text
+        }
+    }
+    return left;
+}
 
+AST.prototype.relational = function(){
+    var left = this.additive();
+    var token;
+    while( token = this.expect(">",">=","<","<=") ){
+        left = {
+            left:left,
+            right:this.additive(),
+            type:AST.BinaryExpression,
+            operator:token.text
+        }
+    }
+    return left;
+}
 
 
 
@@ -617,7 +677,7 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
             return ast.operator + '('+ this.isDefined(this.recurse(ast.argument), 0)  +')';
             
          case AST.BinaryExpression:
-            return this.recurse(ast.left) + ast.operator + this.recurse(ast.right);
+            return  '('+ this.isDefined( this.recurse(ast.left),0 ) +')'  + ast.operator + this.isDefined(this.recurse(ast.right), 0) ;
     }
 }
 

@@ -11,6 +11,16 @@ var ESCAPES = {
     '\"': '"'
 }
 
+var OPERATROS = {
+    "+":true,
+    "!":true,
+    "-":true,
+    "*":true,
+    "/":true,
+    "%":true
+}
+
+
 function parse(expr) {
     var lexer = new Lexer();
     var parser = new Parser(lexer);
@@ -47,7 +57,15 @@ Lexer.prototype.lex = function(text) {
         } else if (this.isWhitespace(this.ch)) {
             this.index++;
         } else {
-            throw "Unexpected next character: " + this.ch;
+            var op = OPERATROS[this.ch];
+            if(op){
+                this.tokens.push({
+                    text:this.ch
+                })
+                this.index++
+            }else{
+                throw "Unexpected next character: " + this.ch;
+            }
         }
     }
 
@@ -94,9 +112,11 @@ Lexer.prototype.isExpOperator = function(ch) {
 Lexer.prototype.readString = function(startQuote) {
     this.index++;
     var string = '';
+    var rawString = startQuote
     var escape = false;
     while (this.index < this.text.length) {
         var ch = this.text.charAt(this.index);
+        rawString += ch;
         if (escape) {
 
             if (ch === "u") {
@@ -119,7 +139,7 @@ Lexer.prototype.readString = function(startQuote) {
         } else if (ch === startQuote) {
             this.index++;
             this.tokens.push({
-                text: string,
+                text: rawString,
                 value: string
             })
             return;
@@ -197,6 +217,8 @@ AST.ThisExpression = "ThisExpression";
 AST.MemberExpression = "MemberExpression";
 AST.CallExpression = "CallExpression";
 AST.AssignmentExpression = "AssignmentExpression";
+AST.UnaryExpression = "UnaryExpression";
+AST.BinaryExpression = "BinaryExpression";
 
 AST.prototype.ast = function(text) {
     this.tokens = this.lexer.lex(text);
@@ -212,13 +234,12 @@ AST.prototype.program = function() {
 
 AST.prototype.assignment = function(){
     
-    var left = this.primary()
+    var left = this.multiplicative();
     if( this.expect("=") ){
-        
         return {
             type:AST.AssignmentExpression,
             left:left,
-            right:this.primary()
+            right:this.multiplicative()
         }
     }
     return left;
@@ -400,6 +421,35 @@ AST.prototype.parseArguments = function(){
    
 }
 
+AST.prototype.unary = function(){
+    var token;
+    if( token = this.expect("+","!","-") ){
+        return {
+            type:AST.UnaryExpression,
+            operator:token.text,
+            argument:this.unary()
+        }
+    }else{
+        return this.primary();
+    }
+}
+AST.prototype.multiplicative = function(){
+    var left = this.unary();
+    var token;
+    if( token = this.expect("*","/","%") ){
+        return {
+            type:AST.BinaryExpression,
+            left:left,
+            operator:token.text,
+            right:this.unary()
+        }
+    }
+    
+    return left;
+}
+
+
+
 
 
 
@@ -426,10 +476,12 @@ ASTCompiler.prototype.compile = function(text) {
         'ensureSafeMemberName',
         'ensureSafeObject',
         'ensureSafeFunction',
+        'ifDefined',
         fnString)(
             ensureSafeMemberName,
             ensureSafeObject,
-            ensureSafeFunction
+            ensureSafeFunction,
+            ifDefined
             );
     /* jshint +W054 */
 };
@@ -561,6 +613,11 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
             }
 
             return this.assign(leftExpr,  'ensureSafeObject(' +  this.recurse(ast.right) + ')' )
+         case AST.UnaryExpression:
+            return ast.operator + '('+ this.isDefined(this.recurse(ast.argument), 0)  +')';
+            
+         case AST.BinaryExpression:
+            return this.recurse(ast.left) + ast.operator + this.recurse(ast.right);
     }
 }
 
@@ -624,6 +681,10 @@ ASTCompiler.prototype.addEnsureSafeObject = function(expr){
 ASTCompiler.prototype.addEnsureSafeFunction = function(expr){
     this.state.body.push("ensureSafeFunction("+ expr +");")
 }
+ASTCompiler.prototype.isDefined = function(value, defaultValue){
+    return 'ifDefined(' + value  + ',' + this.escape(defaultValue) + ')';
+}
+
 
 
 var CALL = Function.prototype.call;
@@ -682,4 +743,8 @@ function ensureSafeFunction(obj){
     }
     
     return obj;
+}
+
+function ifDefined(value, defaultValue){
+    return _.isUndefined(value) ? defaultValue : value;
 }

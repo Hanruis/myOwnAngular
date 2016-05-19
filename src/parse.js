@@ -425,9 +425,11 @@ ASTCompiler.prototype.compile = function(text) {
     return new Function(
         'ensureSafeMemberName',
         'ensureSafeObject',
+        'ensureSafeFunction',
         fnString)(
             ensureSafeMemberName,
-            ensureSafeObject
+            ensureSafeObject,
+            ensureSafeFunction
             );
     /* jshint +W054 */
 };
@@ -546,7 +548,8 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
                  callee = this.nonComputedMember(callContext.context, callContext.name)
                 }
             }
-            return callee + " &&  ensureSafeObject(" + callee + "( " + args.join(",") + " ))";
+            this.addEnsureSafeFunction(callee);
+            return callee + " &&  ensureSafeObject(" + callee  + "( " + args.join(",") + " ))";
          case AST.AssignmentExpression:
             var leftContext = {}
             this.recurse(ast.left, leftContext,true);
@@ -618,7 +621,14 @@ ASTCompiler.prototype.addEnsureSafeObject = function(expr){
     this.state.body.push("ensureSafeObject(" + expr +");");
 }
 
+ASTCompiler.prototype.addEnsureSafeFunction = function(expr){
+    this.state.body.push("ensureSafeFunction("+ expr +");")
+}
 
+
+var CALL = Function.prototype.call;
+var APPLY = Function.prototype.apply;
+var BIND = Function.prototype.bind;
 
 
 function Parser(lexer) {
@@ -653,7 +663,23 @@ function ensureSafeObject(obj){
             throw 'Reerencing window in Angular expresss is disallowed!';
         }else if( obj.children && obj.nodeName || ( obj.prop && obj.attr && obj.find ) ){
             throw 'Referencing DOM nodes in Angular expressions is disallowed!';
+        }else if(obj.constructor === obj){
+            throw 'Referencing Function in Angular expressions is disallowed';
+        }else if( obj.getOwnPropertyNames || obj.getOwnPropertyDescriptor ){
+            throw 'Referencing Object in Angular expressions is disallowed';
         }
     }
+    return obj;
+}
+
+function ensureSafeFunction(obj){
+    if(obj){
+        if( obj.constructor === obj ){
+            throw 'Referencing Function in Angular expressions is disallowed'
+        }else if( obj === CALL || obj === APPLY || obj === BIND ){
+            throw 'Referencing call, apply, or bind in Angular expressions is disallowed';
+        }
+    }
+    
     return obj;
 }

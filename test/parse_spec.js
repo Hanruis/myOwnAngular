@@ -562,5 +562,28 @@ describe('parse', function () {
         expect(function () { fn({ el: document.documentElement }); }).toThrow();
     });
 
+    it('does not allow calling the aliased function constructor', function () {
+        var fn = parse('fnConstructor("return window;")');
+        expect(function () {
+            fn({ fnConstructor: (function () { }).constructor });
+        }).toThrow();
+    });
+    it('does not allow calling functions on Object', function () {
+        var fn = parse('obj.create({})');
+        expect(function () {
+            fn({ obj: Object });
+        }).toThrow();
+    });
+
+    it('does not allow calling call', function () {
+        var fn = parse('fun.call(obj)');
+        expect(function () { fn({ fun: function () { }, obj: {} }); }).toThrow();
+    });
+    
+    it('does not allow calling apply', function () {
+        var fn = parse('fun.apply(obj)');
+        expect(function () { fn({ fun: function () { }, obj: {} }); }).toThrow();
+    });
+
 })
 

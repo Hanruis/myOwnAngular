@@ -26,7 +26,9 @@ var OPERATROS = {
     ">":true,
     ">=":true,
     "<":true,
-    "<=":true
+    "<=":true,
+    "||":true,
+    "&&":true
 }
 
 
@@ -56,7 +58,7 @@ Lexer.prototype.lex = function(text) {
             this.readNumber();
         } else if (this.isQuote(this.ch)) {
             this.readString(this.ch);
-        } else if (this.is("[],{}:.()")) {
+        } else if (this.is("[],{}:.()?;")) {
             this.tokens.push({
                 text: this.ch
             });
@@ -240,6 +242,8 @@ AST.CallExpression = "CallExpression";
 AST.AssignmentExpression = "AssignmentExpression";
 AST.UnaryExpression = "UnaryExpression";
 AST.BinaryExpression = "BinaryExpression";
+AST.LogicalExpression = "LogicalExpression";
+AST.ConditionalExpression = "ConditionalExpression";
 
 AST.prototype.ast = function(text) {
     this.tokens = this.lexer.lex(text);
@@ -247,20 +251,31 @@ AST.prototype.ast = function(text) {
 };
 
 AST.prototype.program = function() {
-    return {
-        type: AST.Program,
-        body: this.assignment()
-    };
+    
+    var body = [];
+    
+    while(true){
+        if( this.tokens.length ){
+            body.push(this.assignment())
+        }
+        if( !this.expect(";") ){
+            return {
+                type:AST.Program,
+                body:body
+            }
+        }
+    }
+
 }
 
 AST.prototype.assignment = function(){
     
-    var left = this.equality();
+    var left = this.ternary();
     if( this.expect("=") ){
         return {
             type:AST.AssignmentExpression,
             left:left,
-            right:this.equality()
+            right:this.ternary()
         }
     }
     return left;
@@ -270,7 +285,10 @@ AST.prototype.assignment = function(){
 
 AST.prototype.primary = function() {
     var primary;
-    if (this.expect('[')) {
+    if( this.expect('(') ){
+        primary = this.assignment();
+        this.consume(")")
+    }else if (this.expect('[')) {
         primary = this.arrayDeclaration();
     } else if (this.expect("{")) {
         primary = this.object();
@@ -511,6 +529,55 @@ AST.prototype.relational = function(){
     return left;
 }
 
+AST.prototype.logicalOR = function(){
+    var left = this.logicalAND();
+    var token;
+    while(token = this.expect("||")){
+        left = {
+            type:AST.LogicalExpression,
+            left:left,
+            right:this.logicalAND(),
+            operator:token.text
+        }
+    }
+    return left;
+}
+AST.prototype.logicalAND = function(){
+    var left = this.equality();
+    var token;
+    
+    while(token = this.expect("&&")){
+        left = {
+            type:AST.LogicalExpression,
+            left:left,
+            right:this.equality(),
+            operator:token.text
+        }
+    }
+    return left;
+}
+
+AST.prototype.ternary = function(){
+    var test = this.logicalOR();
+    var token;
+    
+    if( token = this.expect("?") ){
+        var consequent = this.assignment();
+        if( this.consume(":")){
+            var alternate = this.assignment();
+            return {
+                type:AST.ConditionalExpression,
+                test:test,
+                consequent:consequent,
+                alternate:alternate
+            }
+        }
+
+    }
+    return test;
+}
+
+
 
 
 function ASTCompiler(astBuilder) {
@@ -551,7 +618,10 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
     var intoId;
     switch (ast.type) {
         case AST.Program:
-            this.state.body.push('return', this.recurse(ast.body), ';')
+            _.forEach(_.initial(ast.body), function(statement){
+                self.state.body.push(self.recurse(statement), ';')
+            })
+            this.state.body.push('return', this.recurse(_.last(ast.body)), ';')
             break;
         case AST.Literal:
             return this.escape(ast.value);
@@ -678,6 +748,19 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
             
          case AST.BinaryExpression:
             return  '('+ this.isDefined( this.recurse(ast.left),0 ) +')'  + ast.operator + this.isDefined(this.recurse(ast.right), 0) ;
+         case AST.LogicalExpression:
+            //  作者这里用了好多条件判断去做，模拟 || 和 && 的运算情况，觉得好奇怪，为什么要做的那么复杂呢？？
+            return '(' + this.recurse(ast.left) + ')' + ast.operator + '('+ this.recurse(ast.right) +')'
+            
+         case AST.ConditionalExpression:
+            intoId = this.nextId();
+            
+            this.state.body.push(this.assign(intoId, this.recurse(ast.test)));
+            
+            this.if_(intoId, this.assign(intoId, this.recurse(ast.consequent)));
+            this.if_( this.not(intoId), this.assign(intoId, this.recurse(ast.alternate)) );
+            
+            return intoId
     }
 }
 

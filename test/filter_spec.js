@@ -50,7 +50,28 @@ describe('filter', function () {
             aString:'Hello'
         })).toEqual('HELLO');
     });
+       
+       
+    
+    it('can parse filter chain expressions', function() {
+        register('upcase', function(){
+            return function(value){
+                return value.toUpperCase()
+            }
+        })
         
+        register('exclamate', function(){
+            return function(value){
+                return value + "!"
+            }
+        })
+        
+        var fn = parse('"hello" | upcase | exclamate ' );
+        
+        expect(fn()).toEqual("HELLO!");
+            
+    });
+            
 
         
 });

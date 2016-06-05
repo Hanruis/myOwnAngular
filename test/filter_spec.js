@@ -1,6 +1,7 @@
 /* jshint globalstrict: true */
 /* global filter: false */
 /* global register: false */
+/* global parse: false */
 "use strict";
 
 
@@ -36,8 +37,18 @@ describe('filter', function () {
     });
 
     
-    it('', function() {
+    it('can parse filter expressions', function() {
+        register('upcase',function(){
+            return function(str){
+                return str.toUpperCase();
+            }
+        })
         
+        var fn = parse('aString | upcase');
+        
+        expect(fn({
+            aString:'Hello'
+        })).toEqual('HELLO');
     });
         
 

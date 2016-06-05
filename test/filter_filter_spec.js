@@ -292,4 +292,15 @@ describe('filter filter', function () {
         ]);
     });
 
+    it('allows using a custom comparator', function () {
+        var fn = parse('arr | filter:{$: "o"}:myComparator');
+        expect(fn({
+            arr: ['o', 'oo', 'ao', 'aa'],
+            myComparator: function (left, right) {
+                return left === right;
+            }
+        })).toEqual(['o']);
+    });
+
+
 });

@@ -72,6 +72,33 @@ describe('filter', function () {
             
     });
             
+            
+    
+    it('can pass an additional argument to fitlers', function() {
+        register('repeat', function(){
+            return function(str, times){
+                return _.repeat(str,times);
+            };
+        })
+        var fn = parse('"hello" | repeat:3');
+        expect(fn()).toBe('hellohellohello');
+            
+    });
+                
+    
+    it('can pass serval additional arguments to filters', function() {
+        register('surround',function(){
+            return function(s, left, right){
+                return left + s + right;
+            }
+        })
+        
+        var fn = parse('"hello" | surround:"*":"!" ');
+        expect(fn()).toEqual('*hello!');
+            
+    });
+                    
+                
 
         
 });

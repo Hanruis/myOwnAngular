@@ -746,6 +746,5 @@ describe('parse', function () {
         expect(parse('a = 1; b = 2; a + b')({})).toBe(3);
     });
 
-
 })
 

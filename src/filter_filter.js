@@ -20,8 +20,27 @@ function filterFilter() {
     }
     
     function createPredicateFn(expr) {
-        return function(ele){
-            return ele === expr;
+        function comparator(actual, expected){
+            
+            actual = actual.toLowerCase();
+            expected = expr.toLowerCase();
+            
+            return actual.indexOf(expected) > -1;  
+        }
+        
+        return function predicateFn(item){
+            return deepCompare(item, expr, comparator)
+        }
+    }
+    
+    
+    function deepCompare(actual, expected, comparator){
+        if( _.isObject(actual) ){
+            return _.some(actual, function(value){
+                return deepCompare(value, expected, comparator);
+            })
+        }else{
+            return comparator(actual, expected);
         }
     }
     

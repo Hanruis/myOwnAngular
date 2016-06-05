@@ -97,8 +97,5 @@ describe('filter', function () {
         expect(fn()).toEqual('*hello!');
             
     });
-                    
-                
-
         
 });

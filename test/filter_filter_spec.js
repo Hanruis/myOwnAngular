@@ -230,4 +230,20 @@ describe('filter filter', function () {
         ]);
     });
 
+    it('filters with nested objects on the same level only', function () {
+        var items = [{ user: 'Bob' },
+            { user: { name: 'Bob' } },
+            { user: { name: { first: 'Bob', last: 'Fox' } } }];
+        var fn = parse('arr | filter:{user: {name: "Bob"}}');
+        expect(fn({
+            arr: [
+                { user: 'Bob' },
+                { user: { name: 'Bob' } },
+                { user: { name: { first: 'Bob', last: 'Fox' } } }
+            ]
+        })).toEqual([
+            { user: { name: 'Bob' } }
+        ]);
+    });
+
 });

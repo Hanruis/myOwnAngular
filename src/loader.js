@@ -8,9 +8,14 @@ function setupModuleLoader(window) {
     // for cache module
 
     var createModule = function (name, requires, modules) {
+        var invokeQueue = [];
         modules[name] = {
             name: name,
-            requires: requires || []
+            requires: requires || [],
+            constant:function(key,value){
+                invokeQueue.push(['constant', [key,value]]);
+            },
+            _invokeQueue:invokeQueue
         } 
         return modules[name] 
     }

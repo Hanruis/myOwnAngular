@@ -152,4 +152,23 @@ describe('annotate', function () {
         fn.$inject = ['a', 'b'];
         expect(injector.annotate(fn)).toEqual(['a', 'b']);
     });
+
+    it('returns the array-style annotations of a function', function () {
+        var injector = createInjector([]);
+        var fn = ['a', 'b', function () {}];
+        expect(injector.annotate(fn)).toEqual(['a', 'b']);
+    });
+
+    it('returns an empty array for a non-annotated 0-arg function', function () {
+        var injector = createInjector([]);
+        var fn = function () {};
+        expect(injector.annotate(fn)).toEqual([]);
+    });
+
+    it('returns annotations parsed from function args when not annotated', function () {
+        var injector = createInjector([]);
+        var fn = function (a, b) { };
+        expect(injector.annotate(fn)).toEqual(['a', 'b']);
+    });
+
 });

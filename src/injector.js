@@ -4,7 +4,7 @@ function createInjector(modulesToLoad) {
 
     var cache = {}
     var loadedModules = {}
-
+    var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
     var $provide = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
@@ -26,7 +26,24 @@ function createInjector(modulesToLoad) {
     }
 
     function annotate(fn) {
-        return fn.$inject
+
+        if (!_.isFunction(fn) && !_.isArray(fn) ) {
+            throw new Error('annotate target must be a function or a array')
+        }
+
+        if (_.isArray(fn)) {
+            return fn.slice(0, fn.length-1)
+        }
+        if (fn.$inject) {
+            return fn.$inject
+        }
+    
+        if (!fn.length) {
+            return []
+        }
+        return _.map(FN_ARGS.exec(fn.toString())[1].split(','), function (arg) {
+            return _.trim(arg)
+        })
     }    
 
     _.forEach(modulesToLoad, function loadModule(moduleName) {

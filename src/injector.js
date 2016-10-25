@@ -3,6 +3,7 @@
 function createInjector(modulesToLoad) {
 
     var cache = {}
+    var loadedModules = {}
 
     var $provide = {
         constant: function (key, value) {
@@ -13,23 +14,24 @@ function createInjector(modulesToLoad) {
         }
     }
 
+    
+    _.forEach(modulesToLoad, function loadModule(moduleName) {
 
-    function _creaeteInjector(modulesToLoad) {
-        _.forEach(modulesToLoad, function (moduleName) {
-            var module = window.angular.module(moduleName);
-            var requiredModules = module.requires
-            if (requiredModules.length) {
-                _creaeteInjector(requiredModules)
-            }
-            
-            _.forEach(module._invokeQueue, function (invokeArgs) {
-                var method = invokeArgs[0];
-                var args = invokeArgs[1];
-                $provide[method].apply($provide, args);
-            })
+        if (loadedModules[moduleName]) {
+            return 
+        }
+        loadedModules[moduleName] = true
+
+        var module = window.angular.module(moduleName);
+        var requiredModules = module.requires
+        _.forEach(module.requires, loadModule)
+        
+        _.forEach(module._invokeQueue, function (invokeArgs) {
+            var method = invokeArgs[0];
+            var args = invokeArgs[1];
+            $provide[method].apply($provide, args);
         })
-    }
-    _creaeteInjector(modulesToLoad)
+    })
 
     return {
         has: function (key) {

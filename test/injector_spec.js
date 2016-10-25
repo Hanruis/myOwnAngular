@@ -83,11 +83,23 @@ describe('injector', function () {
         expect(injector.has('anotherConstant')).toBe(true);
         expect(injector.has('aThirdConstant')).toBe(true);
     });
-    
+
     it('loads each module only once', function () {
         angular.module('myModule', ['myOtherModule']);
         angular.module('myOtherModule', ['myModule']);
         createInjector(['myModule']);
+    });
+
+    it('invokes an annotated function with dependency injection', function () {
+        var module = angular.module('myModule', []);
+        module.constant('a', 1);
+        module.constant('b', 2);
+        var injector = createInjector(['myModule']);
+        var fn = function (one, two) {
+            return one + two;
+        };
+        fn.$inject = ['a', 'b'];
+        expect(injector.invoke(fn)).toBe(3);
     });
 
 });

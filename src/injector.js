@@ -14,18 +14,25 @@ function createInjector(modulesToLoad) {
         }
     }
 
-    
+    function invoke(fn) {
+        var args = _.map(fn.$inject, function (token) {
+            return cache[token]
+        })
+        return fn.apply(null, args)
+    }
+
+
     _.forEach(modulesToLoad, function loadModule(moduleName) {
 
         if (loadedModules[moduleName]) {
-            return 
+            return
         }
         loadedModules[moduleName] = true
 
         var module = window.angular.module(moduleName);
         var requiredModules = module.requires
         _.forEach(module.requires, loadModule)
-        
+
         _.forEach(module._invokeQueue, function (invokeArgs) {
             var method = invokeArgs[0];
             var args = invokeArgs[1];
@@ -37,8 +44,9 @@ function createInjector(modulesToLoad) {
         has: function (key) {
             return cache.hasOwnProperty(key)
         },
-        get:function(key){
+        get: function (key) {
             return cache[key]
-        }
+        },
+        invoke: invoke
     }
 }

@@ -13,15 +13,24 @@ function createInjector(modulesToLoad) {
         }
     }
 
-    _.forEach(modulesToLoad, function (moduleName) {
-        var module = window.angular.module(moduleName);
-        _.forEach(module._invokeQueue, function (invokeArgs) {
-            console.log(invokeArgs)
-            var method = invokeArgs[0];
-            var args = invokeArgs[1];
-            $provide[method].apply($provide, args);
+
+    function _creaeteInjector(modulesToLoad) {
+        _.forEach(modulesToLoad, function (moduleName) {
+            var module = window.angular.module(moduleName);
+            var requiredModules = module.requires
+            if (requiredModules.length) {
+                _creaeteInjector(requiredModules)
+            }
+            
+            _.forEach(module._invokeQueue, function (invokeArgs) {
+                var method = invokeArgs[0];
+                var args = invokeArgs[1];
+                $provide[method].apply($provide, args);
+            })
         })
-    })
+    }
+    _creaeteInjector(modulesToLoad)
+
     return {
         has: function (key) {
             return cache.hasOwnProperty(key)

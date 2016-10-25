@@ -45,5 +45,42 @@ describe('injector', function () {
     });
 
 
+    it('loads multiple modules', function () {
+        var module1 = angular.module('myModule', []);
+        var module2 = angular.module('myModule2', []);
+        module1.constant('aConstant', 43);
+        module2.constant('bConstant', 41);
 
+        var injector = createInjector(['myModule', 'myModule2']);
+
+        expect(injector.has('aConstant')).toBe(true);
+        expect(injector.has('bConstant')).toBe(true);
+    });
+
+    it('loads the required modules of a module', function () {
+        var module1 = angular.module('myModule', []);
+        var module2 = angular.module('myOtherModule', ['myModule']);
+
+        module1.constant('aConstant', 42);
+        module2.constant('bConstant', 21);
+
+        var injector = createInjector(['myOtherModule']);
+
+        expect(injector.has('aConstant')).toBe(true);
+        expect(injector.has('bConstant')).toBe(true);
+
+    });
+
+    it('loads the transitively required modules of a module', function () {
+        var module1 = angular.module('myModule', []);
+        var module2 = angular.module('myOtherModule', ['myModule']);
+        var module3 = angular.module('myThirdModule', ['myOtherModule']);
+        module1.constant('aConstant', 42);
+        module2.constant('anotherConstant', 43);
+        module3.constant('aThirdConstant', 44);
+        var injector = createInjector(['myThirdModule']);
+        expect(injector.has('aConstant')).toBe(true);
+        expect(injector.has('anotherConstant')).toBe(true);
+        expect(injector.has('aThirdConstant')).toBe(true);
+    });
 });

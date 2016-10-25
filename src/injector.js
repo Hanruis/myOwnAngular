@@ -14,13 +14,20 @@ function createInjector(modulesToLoad) {
         }
     }
 
-    function invoke(fn) {
+    function invoke(fn, context, locals) {
+        locals = locals || {}        
         var args = _.map(fn.$inject, function (token) {
-            return cache[token]
+            if (_.isString(token)) {
+                return locals.hasOwnProperty(token) ? locals[token] : cache[token]
+            }
+            throw new Error('Incorrect injection token! Expected a string, got' + token)
         })
-        return fn.apply(null, args)
+        return fn.apply(context, args)
     }
 
+    function annotate(fn) {
+        return fn.$inject
+    }    
 
     _.forEach(modulesToLoad, function loadModule(moduleName) {
 
@@ -47,6 +54,7 @@ function createInjector(modulesToLoad) {
         get: function (key) {
             return cache[key]
         },
-        invoke: invoke
+        invoke: invoke,
+        annotate:annotate
     }
 }

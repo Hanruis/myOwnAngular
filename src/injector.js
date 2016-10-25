@@ -5,6 +5,7 @@ function createInjector(modulesToLoad) {
     var cache = {}
     var loadedModules = {}
     var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
+    var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
     var $provide = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
@@ -41,7 +42,10 @@ function createInjector(modulesToLoad) {
         if (!fn.length) {
             return []
         }
-        return _.map(FN_ARGS.exec(fn.toString())[1].split(','), function (arg) {
+
+        var fnString = fn.toString().replace(STRIP_COMMENTS,'')
+
+        return _.map(FN_ARGS.exec(fnString)[1].split(','), function (arg) {
             return _.trim(arg)
         })
     }    

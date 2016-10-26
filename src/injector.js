@@ -1,11 +1,12 @@
 /* global angular: false */
 
-function createInjector(modulesToLoad) {
+function createInjector(modulesToLoad, isStrictMode) {
 
     var cache = {}
     var loadedModules = {}
     var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
     var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
+    var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
     var $provide = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
@@ -46,7 +47,7 @@ function createInjector(modulesToLoad) {
         var fnString = fn.toString().replace(STRIP_COMMENTS,'')
 
         return _.map(FN_ARGS.exec(fnString)[1].split(','), function (arg) {
-            return _.trim(arg)
+            return arg.match(FN_ARG)[2]
         })
     }    
 

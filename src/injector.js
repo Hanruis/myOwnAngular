@@ -35,12 +35,12 @@ function createInjector(modulesToLoad, isStrictMode) {
     // one for providers, another for instances
     // it will find the dependency on instanceCache first , if not found, find from provider and instantiate it
     var providerCache = {}
-    var providerInjector = createInternalInjector(providerCache, function () {
+    var providerInjector = providerCache.$injector = createInternalInjector(providerCache, function () {
         throw 'Unknown provider: ' + path.join(' <- ')
     });
 
     var instanceCache = {}
-    var instanceInjector = createInternalInjector(instanceCache, function (name) {
+    var instanceInjector = instanceCache.$injector = createInternalInjector(instanceCache, function (name) {
         var provider = providerInjector.get(name + 'Provider')
         return instanceInjector.invoke(provider.$get, provider)
     });

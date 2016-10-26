@@ -513,4 +513,40 @@ describe('annotate', function () {
         expect(injector.get('a')).toBe(42);
     });
 
+
+    it('allows injecting the instance injector to $get', function () {
+        var module = angular.module('myModule', []);
+        module.constant('a', 42);
+        module.provider('b', function BProvider() {
+            this.$get = function ($injector) {
+                return $injector.get('a');
+            };
+        });
+        var injector = createInjector(['myModule']);
+        expect(injector.get('b')).toBe(42);
+    });
+
+    
+    it('allows injecting the provider to provider', function() {
+        var module = angular.module('myModule', [])
+        
+        module.provider('a', function AProvider() {
+            this.value = 1
+            this.$get = function () {
+                return this.value
+            }
+        })
+        module.provider('b', function BProvider($injector) {
+            var aProvider = $injector.get('aProvider')
+            this.$get = function () {
+                return aProvider.value
+            }
+        })
+
+        var injector = createInjector(['myModule'])
+        expect(injector.get('b')).toBe(1);
+            
+    });
+        
+
 });

@@ -17,13 +17,19 @@ function createInjector(modulesToLoad, isStrictMode) {
     }
 
     function invoke(fn, context, locals) {
-        locals = locals || {}        
-        var args = _.map(fn.$inject, function (token) {
+        locals = locals || {}
+
+        var args = _.map(annotate(fn), function (token) {
             if (_.isString(token)) {
                 return locals.hasOwnProperty(token) ? locals[token] : cache[token]
             }
             throw new Error('Incorrect injection token! Expected a string, got' + token)
         })
+
+        if (_.isArray(fn)) {
+            fn = _.last(fn)
+        }
+
         return fn.apply(context, args)
     }
 
@@ -42,6 +48,10 @@ function createInjector(modulesToLoad, isStrictMode) {
     
         if (!fn.length) {
             return []
+        }
+
+        if (isStrictMode) {
+            throw 'fn is not using explicit annotation and cannot be invoked in strict mode';
         }
 
         var fnString = fn.toString().replace(STRIP_COMMENTS,'')

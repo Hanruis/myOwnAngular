@@ -146,6 +146,12 @@ describe('injector', function () {
 });
 
 describe('annotate', function () {
+
+    beforeEach(function () {
+        delete window.angular;
+        setupModuleLoader(window);
+    });
+
     it('returns the $inject annotation of a function when it has one', function () {
         var injector = createInjector([]);
         var fn = function () {};
@@ -330,6 +336,17 @@ describe('annotate', function () {
         });
         var injector = createInjector(['myModule']);
         expect(injector.get('b')).toBe(3);
+    });
+
+    it('instantiates a dependency only once', function () {
+        var module = angular.module('myModule', []);
+        module.provider('a', {
+            $get: function () {
+                return {};
+            }
+        });
+        var injector = createInjector(['myModule']);
+        expect(injector.get('a')).toBe(injector.get('a'));
     });
 
 });

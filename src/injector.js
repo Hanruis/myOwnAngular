@@ -5,10 +5,12 @@ function createInjector(modulesToLoad, isStrictMode) {
     var instanceCache = {}
     var providerCache = {}
     var loadedModules = {}
+    var INSTANTIATING = {}
 
     var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
     var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
     var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
+
 
     var STR_PROVIDER = 'Provder'
 
@@ -81,12 +83,23 @@ function createInjector(modulesToLoad, isStrictMode) {
 
     function getService(name) {
         if (instanceCache.hasOwnProperty(name)) {
+            if (instanceCache[name] === INSTANTIATING) {
+                throw new Error('Circular dependency found');   
+            }
             return instanceCache[name]
         }
         if (providerCache.hasOwnProperty(name + STR_PROVIDER)) {
-            var provider = providerCache[name + STR_PROVIDER]
-            instanceCache[name] = invoke(provider.$get, provider)
-            return instanceCache[name]
+            instanceCache[name] = INSTANTIATING
+            try {
+                var provider = providerCache[name + STR_PROVIDER]
+                var instance = invoke(provider.$get, provider)
+                instanceCache[name] = instance
+                return instance
+            } finally {
+                if (instanceCache[name] === INSTANTIATING) {
+                    delete instanceCache[name]
+                }
+            }
         }
     }
 

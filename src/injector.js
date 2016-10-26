@@ -50,20 +50,20 @@ function createInjector(modulesToLoad, isStrictMode) {
 
     var runBlocks = []
     _.forEach(modulesToLoad, function loadModule(moduleName) {
-
-        if (loadedModules[moduleName]) {
-            return
+        if (_.isString(moduleName)) {
+            if (loadedModules[moduleName]) {return}
+            loadedModules[moduleName] = true
+            var module = angular.module(moduleName)
+            var requiredModules = module.requires
+            _.forEach(module.requires, loadModule)
+            runInvokeQueue(module._invokeQueue);
+            runInvokeQueue(module._configBlocks);
+            runBlocks = runBlocks.concat(module._runBlocks)
+        } else if (_.isFunction(moduleName) || _.isArray(moduleName)) {
+            runBlocks.push(providerInjector.invoke(moduleName))
         }
-        loadedModules[moduleName] = true
-
-        var module = window.angular.module(moduleName)
-        var requiredModules = module.requires
-        _.forEach(module.requires, loadModule)
-        runInvokeQueue(module._invokeQueue);
-        runInvokeQueue(module._configBlocks);
-        runBlocks = runBlocks.concat(module._runBlocks)
     })
-    _.forEach(runBlocks, function (runBlock) {
+    _.forEach(_.compact(runBlocks), function (runBlock) {
         instanceInjector.invoke(runBlock)
     })
 

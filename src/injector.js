@@ -48,6 +48,7 @@ function createInjector(modulesToLoad, isStrictMode) {
     });
 
 
+
     _.forEach(modulesToLoad, function loadModule(moduleName) {
 
         if (loadedModules[moduleName]) {
@@ -58,17 +59,22 @@ function createInjector(modulesToLoad, isStrictMode) {
         var module = window.angular.module(moduleName)
         var requiredModules = module.requires
         _.forEach(module.requires, loadModule)
-
-        _.forEach(module._invokeQueue, function (invokeArgs) {
-            var method = invokeArgs[0];
-            var args = invokeArgs[1];
-            providerCache.$provide[method].apply(providerCache.$provide, args)
-        })
+        runInvokeQueue(module._invokeQueue);
+        runInvokeQueue(module._configBlocks);
     })
 
     return instanceInjector
 
-    
+
+    function runInvokeQueue(queue) {
+        // 这实现的这么绕，是为了后面 config 么？
+        _.forEach(queue, function (invokeArgs) {
+            var service = providerInjector.get(invokeArgs[0])
+            var method = invokeArgs[1]
+            var args = invokeArgs[2]
+            service[method].apply(service, args);
+        })
+    }
 
     function createInternalInjector(cache, factoryFn) {
 

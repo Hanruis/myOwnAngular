@@ -8,16 +8,17 @@ function setupModuleLoader(window) {
     var METHOD_CONSTANT = 'constant'
 
 
-    var createModule = function (name, requires, modules) {
+    var createModule = function (name, requires, modules, configFn) {
         if (name === 'hasOwnProperty') {
             throw 'hasOwnProperty is not a valid module name'
         }
         var invokeQueue = []
+        var configBlocks = []
 
-
-        var invokeLater = function (method, arrayMethod) {
+        var invokeLater = function (service, method, arrayMethod, queue) {
             return function () {
-                invokeQueue[ arrayMethod || 'push' ]([method, arguments])
+                queue = queue || invokeQueue
+                queue[ arrayMethod || 'push' ]([service, method, arguments])
                 return moduleInstance
             }
         }
@@ -26,9 +27,16 @@ function setupModuleLoader(window) {
             name: name,
             requires: requires || [],
             _invokeQueue: invokeQueue,
-            constant: invokeLater('constant', 'unshift'),
-            provider: invokeLater('provider')
+            _configBlocks:configBlocks,
+            constant: invokeLater('$provide','constant', 'unshift'),
+            provider: invokeLater('$provide', 'provider'),
+            config:invokeLater('$injector', 'invoke', 'push', configBlocks)
         }
+
+        if (configFn) {
+            moduleInstance.config(configFn)
+        }        
+
         modules[name] = moduleInstance
         return moduleInstance
     }
@@ -42,14 +50,14 @@ function setupModuleLoader(window) {
 
     ensure(angular, 'module', function () {
         var modules = {};
-        return function (name, requires) {
+        return function (name, requires, configFn) {
 
             if (name === 'hasOwnProperty') {
                 throw new Error('hasOwnProperty is not a valid module name');
             }
 
             if (requires) {
-                return createModule(name, requires, modules);
+                return createModule(name, requires, modules, configFn);
             }
             return getModule(name, modules)
         }

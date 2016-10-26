@@ -3,20 +3,21 @@ function setupModuleLoader(window) {
         return obj[name] || (obj[name] = factory())
     }
 
-    var angular = ensure(window, 'angular', Object);
-    // for cache module
+    var angular = ensure(window, 'angular', Object)
+        // for cache module
+    var METHOD_CONSTANT = 'constant'
 
 
     var createModule = function (name, requires, modules) {
         if (name === 'hasOwnProperty') {
-            throw 'hasOwnProperty is not a valid module name';
+            throw 'hasOwnProperty is not a valid module name'
         }
         var invokeQueue = []
 
 
-        var invokeLater = function (method) {
+        var invokeLater = function (method, arrayMethod) {
             return function () {
-                invokeQueue.push([method, arguments])
+                invokeQueue[ arrayMethod || 'push' ]([method, arguments])
                 return moduleInstance
             }
         }
@@ -25,8 +26,8 @@ function setupModuleLoader(window) {
             name: name,
             requires: requires || [],
             _invokeQueue: invokeQueue,
-            constant: invokeLater('constant'),
-            provider:invokeLater('provider')
+            constant: invokeLater('constant', 'unshift'),
+            provider: invokeLater('provider')
         }
         modules[name] = moduleInstance
         return moduleInstance
@@ -34,7 +35,7 @@ function setupModuleLoader(window) {
 
     var getModule = function (name, modules) {
         if (!modules[name]) {
-            throw new Error('module:' + name + ' is not exist');
+            throw new Error('module:' + name + ' is not exist')
         }
         return modules[name] || {}
     }

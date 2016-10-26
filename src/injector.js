@@ -1,5 +1,5 @@
 /* global angular: false */
-
+// injector 如其名，就是创建好这些模块和依赖，提供依赖注解析和注入方法。
 function createInjector(modulesToLoad, isStrictMode) {
 
     var cache = {}
@@ -7,12 +7,15 @@ function createInjector(modulesToLoad, isStrictMode) {
     var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
     var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
     var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
-    var $provide = {
+    var $provider = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
                 throw 'hasOwnProperty is not a valid constant name';
             }
             cache[key] = value
+        },
+        provider: function (key, provider) {
+            cache[key] = invoke(provider.$get, provider)
         }
     }
 
@@ -61,6 +64,14 @@ function createInjector(modulesToLoad, isStrictMode) {
         })
     }    
 
+
+    function instantiate(Type, locals) {
+        var UnWrappedType = _.isArray(Type) ? _.last(Type) : Type
+        var instance = Object.create(UnWrappedType.prototype)
+        invoke(Type, instance, locals)
+        return instance
+    }
+
     _.forEach(modulesToLoad, function loadModule(moduleName) {
 
         if (loadedModules[moduleName]) {
@@ -75,7 +86,7 @@ function createInjector(modulesToLoad, isStrictMode) {
         _.forEach(module._invokeQueue, function (invokeArgs) {
             var method = invokeArgs[0];
             var args = invokeArgs[1];
-            $provide[method].apply($provide, args);
+            $provider[method].apply($provider, args);
         })
     })
 
@@ -87,6 +98,7 @@ function createInjector(modulesToLoad, isStrictMode) {
             return cache[key]
         },
         invoke: invoke,
-        annotate:annotate
+        annotate: annotate,
+        instantiate:instantiate
     }
 }

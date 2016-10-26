@@ -14,7 +14,14 @@ function createInjector(modulesToLoad, isStrictMode) {
 
     var STR_PROVIDER = 'Provider'
 
-    var $provider = {
+
+
+    // create two injector;
+    // they have the same method;
+    // one for providers, another for instances
+    // it will find the dependency on instanceCache first , if not found, find from provider and instantiate it
+    var providerCache = {}
+    providerCache.$provide = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
                 throw 'hasOwnProperty is not a valid constant name';
@@ -30,13 +37,8 @@ function createInjector(modulesToLoad, isStrictMode) {
         }
     }
 
-    // create two injector;
-    // they have the same method;
-    // one for providers, another for instances
-    // it will find the dependency on instanceCache first , if not found, find from provider and instantiate it
-    var providerCache = {}
-    var providerInjector = providerCache.$injector = createInternalInjector(providerCache, function () {
-        throw 'Unknown provider: ' + path.join(' <- ')
+    var providerInjector = providerCache.$injector = createInternalInjector(providerCache, function (name) {
+        throw 'Unknown provider: ' + name + path.join(' <- ')
     });
 
     var instanceCache = {}
@@ -44,6 +46,7 @@ function createInjector(modulesToLoad, isStrictMode) {
         var provider = providerInjector.get(name + 'Provider')
         return instanceInjector.invoke(provider.$get, provider)
     });
+
 
     _.forEach(modulesToLoad, function loadModule(moduleName) {
 
@@ -59,7 +62,7 @@ function createInjector(modulesToLoad, isStrictMode) {
         _.forEach(module._invokeQueue, function (invokeArgs) {
             var method = invokeArgs[0];
             var args = invokeArgs[1];
-            $provider[method].apply($provider, args)
+            providerCache.$provide[method].apply(providerCache.$provide, args)
         })
     })
 

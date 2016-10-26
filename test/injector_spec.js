@@ -526,10 +526,10 @@ describe('annotate', function () {
         expect(injector.get('b')).toBe(42);
     });
 
-    
-    it('allows injecting the provider to provider', function() {
+
+    it('allows injecting the provider to provider', function () {
         var module = angular.module('myModule', [])
-        
+
         module.provider('a', function AProvider() {
             this.value = 1
             this.$get = function () {
@@ -545,8 +545,32 @@ describe('annotate', function () {
 
         var injector = createInjector(['myModule'])
         expect(injector.get('b')).toBe(1);
-            
-    });
-        
 
+    });
+
+
+    it('allows injecting the $provider service to providers', function () {
+        var module = angular.module('myModule', [])
+
+        module.provider('b', function ($provide) {
+            $provide.constant('a', 1)
+            this.$get = function (a) {
+                return a + 1
+            }
+        })
+
+        var injector = createInjector(['myModule'])
+        expect(injector.get('b')).toBe(2);
+    });
+
+    it('does not allow injecting the $provide service to $get', function () {
+        var module = angular.module('myModule', []);
+        module.provider('a', function AProvider() {
+            this.$get = function ($provide) {};
+        });
+        var injector = createInjector(['myModule']);
+        expect(function () {
+            injector.get('a');
+        }).toThrow();
+    });
 });

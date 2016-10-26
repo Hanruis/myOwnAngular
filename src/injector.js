@@ -14,7 +14,7 @@ function createInjector(modulesToLoad, isStrictMode) {
     var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
 
 
-    var STR_PROVIDER = 'Provder'
+    var STR_PROVIDER = 'Provider'
 
     var $provider = {
         constant: function (key, value) {
@@ -24,6 +24,9 @@ function createInjector(modulesToLoad, isStrictMode) {
             instanceCache[key] = value
         },
         provider: function (key, provider) {
+            if (_.isFunction(provider)) {
+                provider = instantiate(provider)
+            }
             providerCache[key + STR_PROVIDER] = provider
         }
     }
@@ -90,6 +93,11 @@ function createInjector(modulesToLoad, isStrictMode) {
             }
             return instanceCache[name]
         }
+        
+        if (providerCache.hasOwnProperty(name)) {
+            return providerCache[name]
+        }
+
         if (providerCache.hasOwnProperty(name + STR_PROVIDER)) {
             path.unshift(name)
             instanceCache[name] = INSTANTIATING

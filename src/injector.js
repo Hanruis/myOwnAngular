@@ -48,7 +48,7 @@ function createInjector(modulesToLoad, isStrictMode) {
     });
 
 
-
+    var runBlocks = []
     _.forEach(modulesToLoad, function loadModule(moduleName) {
 
         if (loadedModules[moduleName]) {
@@ -61,6 +61,10 @@ function createInjector(modulesToLoad, isStrictMode) {
         _.forEach(module.requires, loadModule)
         runInvokeQueue(module._invokeQueue);
         runInvokeQueue(module._configBlocks);
+        runBlocks = runBlocks.concat(module._runBlocks)
+    })
+    _.forEach(runBlocks, function (runBlock) {
+        instanceInjector.invoke(runBlock)
     })
 
     return instanceInjector

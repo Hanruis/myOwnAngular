@@ -36,9 +36,18 @@ function createInjector(modulesToLoad, isStrictMode) {
             providerCache[key + STR_PROVIDER] = provider
         },
         // 通过这样的方法，就可以很方便的实现 provider 和 instance 的不同依赖注入
-        factory: function (key, factoryFn) {
+        factory: function (key, factoryFn, enforce) {
             this.provider(key, {
-                $get:enforceReturnValue(factoryFn) // 这个 $get 我竟然忘了
+                // 不支持参数默认值也是麻烦
+                $get: enforce === false ? factoryFn : enforceReturnValue(factoryFn) // 这个 $get 我竟然忘了
+            })
+        },
+        value: function (key, value) {
+            this.factory(key, _.constant(value), false)
+        },
+        service: function (key, serviceFn) {
+            this.factory(key, function () {
+                return instanceInjector.instantiate(serviceFn)
             })
         }
     }
@@ -56,7 +65,9 @@ function createInjector(modulesToLoad, isStrictMode) {
 
     var runBlocks = []
     _.forEach(modulesToLoad, function loadModule(moduleName) {
-        if (loadedModules.has(moduleName)) { return }
+        if (loadedModules.has(moduleName)) {
+            return
+        }
         loadedModules.put(moduleName, true)
         if (_.isString(moduleName)) {
             var module = angular.module(moduleName)

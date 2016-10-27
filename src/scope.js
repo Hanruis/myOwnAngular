@@ -13,9 +13,9 @@ function Scope() {
 }
 
 
-function initWatchVal() { }
+function initWatchVal() {}
 
-function noop() { }
+function noop() {}
 
 Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
 
@@ -30,7 +30,7 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
     this.$$watchers.unshift(watcher);
     this.$$lastDirtyWatch = null
 
-    var self = this    
+    var self = this
     return function () {
         var index = self.$$watchers.indexOf(watcher)
         if (index > -1) {
@@ -52,24 +52,26 @@ Scope.prototype.$$digestOnce = function () {
     var self = this;
     var dirty;
     _.forEachRight(this.$$watchers, function (watcher) {
-        try {
-            // 作者是把变量放在循环的外面。
-            // 其实不太懂为什么觉得其实放在里面也没什么关系。
-            // 如果从可读性来说，其实都一样吧。但是如果从性能来说，嗯，我觉得这个会好一点；不过现在 intel 的 
-            // cpu 有那么多的寄存器，好像也不是什么问题呃 (─.─|||)
-            var newValue = watcher.watchFn(self);
-            var oldValue = watcher.last;
-            if (!self.$$areEqual(newValue, oldValue, watcher.valueEqual)) {
-                self.$$lastDirtyWatch = watcher;
-                watcher.last = (watcher.valueEqual ? _.cloneDeep(newValue) : newValue);
-                // 这里为什么要做条件表达式，来使得给到 listener 的 oldValue 不会是 initWatchVal
-                watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
-                dirty = true;
-            } else if (self.$$lastDirtyWatch === watcher) {
-                return false;
+        if (watcher) {
+            try {
+                // 作者是把变量放在循环的外面。
+                // 其实不太懂为什么觉得其实放在里面也没什么关系。
+                // 如果从可读性来说，其实都一样吧。但是如果从性能来说，嗯，我觉得这个会好一点；不过现在 intel 的 
+                // cpu 有那么多的寄存器，好像也不是什么问题呃 (─.─|||)
+                var newValue = watcher.watchFn(self);
+                var oldValue = watcher.last;
+                if (!self.$$areEqual(newValue, oldValue, watcher.valueEqual)) {
+                    self.$$lastDirtyWatch = watcher;
+                    watcher.last = (watcher.valueEqual ? _.cloneDeep(newValue) : newValue);
+                    // 这里为什么要做条件表达式，来使得给到 listener 的 oldValue 不会是 initWatchVal
+                    watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
+                    dirty = true;
+                } else if (self.$$lastDirtyWatch === watcher) {
+                    return false;
+                }
+            } catch (error) {
+                console.error(error);
             }
-        } catch (error) {
-            console.log(error);
         }
     });
     return dirty;
@@ -146,16 +148,16 @@ Scope.prototype.$apply = function (applyFn) {
 
 Scope.prototype.$evalAsync = function (evalFn) {
     var self = this;
-    
-    
-    if( !self.$$phase && !self.$$asyncQueue.length ){
-        setTimeout(function(){
-            if( self.$$asyncQueue.length ){
+
+
+    if (!self.$$phase && !self.$$asyncQueue.length) {
+        setTimeout(function () {
+            if (self.$$asyncQueue.length) {
                 self.$digest();
             }
-        },0);
+        }, 0);
     }
-    
+
     this.$$asyncQueue.push({
         scope: this,
         expression: evalFn
@@ -195,9 +197,9 @@ Scope.prototype.$$flushApplyAsync = function () {
         try {
             this.$$applyAsyncQueue.shift()();
         } catch (error) {
-            
+
         }
-        
+
     }
     this.$$applyAsyncId = null;
 };

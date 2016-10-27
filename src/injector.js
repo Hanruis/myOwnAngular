@@ -1,8 +1,8 @@
-/* global angular: false */
+/* global angular: false , HashMap: false */
 // injector 如其名，就是创建好这些模块和依赖，提供依赖注解析和注入方法。
 function createInjector(modulesToLoad, isStrictMode) {
 
-    var loadedModules = {}
+    var loadedModules = new HashMap()
     var INSTANTIATING = {}
     var path = []
 
@@ -50,9 +50,9 @@ function createInjector(modulesToLoad, isStrictMode) {
 
     var runBlocks = []
     _.forEach(modulesToLoad, function loadModule(moduleName) {
+        if (loadedModules.has(moduleName)) { return }
+        loadedModules.put(moduleName, true)
         if (_.isString(moduleName)) {
-            if (loadedModules[moduleName]) {return}
-            loadedModules[moduleName] = true
             var module = angular.module(moduleName)
             var requiredModules = module.requires
             _.forEach(module.requires, loadModule)

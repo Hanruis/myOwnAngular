@@ -632,7 +632,7 @@ describe('Scope', function () {
             scope.$digest();
             expect(watchCalls).toEqual(['first', 'second', 'third', 'first', 'third']);
         });
-        
+
         it("allows a $watch to destroy another during digest", function () {
             scope.aValue = 'abc';
             scope.counter = 0;

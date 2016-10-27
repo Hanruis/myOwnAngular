@@ -34,7 +34,8 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
     return function () {
         var index = self.$$watchers.indexOf(watcher)
         if (index > -1) {
-            self.$$watchers.splice(index,1)
+            self.$$watchers.splice(index, 1)
+            self.$$lastDirtyWatch = null
         }
     }
 
@@ -70,8 +71,6 @@ Scope.prototype.$$digestOnce = function () {
         } catch (error) {
             console.log(error);
         }
-
-
     });
     return dirty;
 };

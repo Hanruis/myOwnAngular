@@ -25,7 +25,16 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
         // 如果 scope 的属性是 undefined 的话，怎么破？ 怎么比较新旧值？？--》答案是将一个函数赋值给 last
         last: initWatchVal
     });
-    this.$$lastDirtyWatch = null;
+    this.$$lastDirtyWatch = null
+
+    var self = this    
+    return function () {
+        var index = _.findIndex(self.$$watchers, function (watcher) {
+            return watcher.watchFn === watchFn
+        })
+        self.$$watchers.splice(index,1)
+    }
+
 };
 
 /**
@@ -83,7 +92,7 @@ Scope.prototype.$digest = function () {
                 var asyncTask = this.$$asyncQueue.shift();
                 asyncTask.scope.$eval(asyncTask.expression);
             } catch (error) {
-                console.log(error);
+                console.error(error);
             }
 
         }
@@ -102,7 +111,7 @@ Scope.prototype.$digest = function () {
         try {
             this.$$postDigestQueue.shift()();
         } catch (error) {
-            console.log(error);
+            console.error(error);
         }
 
     }

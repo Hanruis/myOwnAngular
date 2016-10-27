@@ -49,16 +49,21 @@ Scope.prototype.$watchGroup = function (watchFns, listener) {
 
     var changeReactionScheduled = false
     var firstRun = true
-
+    
     if (!watchFns.length) {
+        var shouldCall = true
         this.$evalAsync(function () {
-            listener(newValues, oldValues)
+            if (shouldCall) {
+                listener(newValues, oldValues)
+            }
         })
-        return
+        return function () {
+            shouldCall = false
+        }
     }    
 
-    _.forEach(watchFns, function (watchFn, index) {
-        self.$watch(watchFn, function (oldValue, newValue) {
+    var destroyFunctions = _.map(watchFns, function (watchFn, index) {
+        return self.$watch(watchFn, function (oldValue, newValue) {
             oldValues[index] = oldValue
             newValues[index] = newValue
             if (!changeReactionScheduled) {
@@ -67,6 +72,12 @@ Scope.prototype.$watchGroup = function (watchFns, listener) {
             }
         })
     })
+
+    return function () {
+        _.forEach(destroyFunctions, function (destroyFunction) {
+            destroyFunction()
+        })
+    }
 
     function watchGroupListener() {
         if (firstRun) {
@@ -186,6 +197,7 @@ Scope.prototype.$apply = function (applyFn) {
     }
 };
 
+// 没有返回一个 destroy 函数么
 Scope.prototype.$evalAsync = function (evalFn) {
     var self = this;
 

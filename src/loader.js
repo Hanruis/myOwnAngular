@@ -28,10 +28,11 @@ function setupModuleLoader(window) {
             requires: requires || [],
             _invokeQueue: invokeQueue,
             _configBlocks: configBlocks,
-            _runBlocks:[],
+            _runBlocks: [],
             constant: invokeLater('$provide','constant', 'unshift'),
             provider: invokeLater('$provide', 'provider'),
             config: invokeLater('$injector', 'invoke', 'push', configBlocks),
+            factory: invokeLater('$provide', 'factory'),
             run: function (fn) {
                 moduleInstance._runBlocks.push(fn)
                 return moduleInstance

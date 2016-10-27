@@ -34,6 +34,12 @@ function createInjector(modulesToLoad, isStrictMode) {
                 provider = providerInjector.instantiate(provider)
             }
             providerCache[key + STR_PROVIDER] = provider
+        },
+        // 通过这样的方法，就可以很方便的实现 provider 和 instance 的不同依赖注入
+        factory: function (key, factoryFn) {
+            this.provider(key, {
+                $get:enforceReturnValue(factoryFn) // 这个 $get 我竟然忘了
+            })
         }
     }
 
@@ -56,19 +62,31 @@ function createInjector(modulesToLoad, isStrictMode) {
             var module = angular.module(moduleName)
             var requiredModules = module.requires
             _.forEach(module.requires, loadModule)
+
             runInvokeQueue(module._invokeQueue);
             runInvokeQueue(module._configBlocks);
+
             runBlocks = runBlocks.concat(module._runBlocks)
         } else if (_.isFunction(moduleName) || _.isArray(moduleName)) {
+            // 有可能是 function module return a fucntion that will treated by run block
             runBlocks.push(providerInjector.invoke(moduleName))
         }
     })
+
     _.forEach(_.compact(runBlocks), function (runBlock) {
         instanceInjector.invoke(runBlock)
     })
-
     return instanceInjector
 
+    function enforceReturnValue(factoryFn) {
+        return function () {
+            var value = instanceInjector.invoke(factoryFn)
+            if (_.isUndefined(value)) {
+                throw 'factory must return a value';
+            }
+            return value
+        }
+    }
 
     function runInvokeQueue(queue) {
         // 这实现的这么绕，是为了后面 config 么？
@@ -81,8 +99,6 @@ function createInjector(modulesToLoad, isStrictMode) {
     }
 
     function createInternalInjector(cache, factoryFn) {
-
-
         return {
             has: function (key) {
                 return cache.hasOwnProperty(key) ||
@@ -139,8 +155,6 @@ function createInjector(modulesToLoad, isStrictMode) {
             return instance
         }
     }
-
-
 
     function annotate(fn) {
 

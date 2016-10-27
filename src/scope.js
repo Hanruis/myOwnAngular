@@ -41,6 +41,30 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
 
 };
 
+Scope.prototype.$watchGroup = function (watchFns, listener) {
+    var self = this
+
+    var newValues = new Array(watchFns.length)
+    var oldValues = new Array(watchFns.length)
+
+    var changeReactionScheduled = false
+
+    _.forEach(watchFns, function (watchFn, index) {
+        self.$watch(watchFn, function (oldValue, newValue) {
+            oldValues[index] = oldValue
+            newValues[index] = newValue
+            if (!changeReactionScheduled) {
+                changeReactionScheduled = true
+                self.$evalAsync(function () {
+                    changeReactionScheduled = false
+                    listener(oldValues, newValues, self)
+                })
+            }
+        })
+    })
+}
+
+
 /**
  * 这里使用 digest 的原理是，在 watcher 里面挂着上次的 value
  * 不过注意，后面会遇到 object 里面的引用的问题，这样即使 obj 的某个属性改变了，

@@ -750,7 +750,7 @@ describe('Scope', function () {
             scope.$digest();
             expect(gotNewValues).toBe(gotOldValues);
         });
-        
+
         it('uses different arrays for old and new values on subsequent runs', function () {
             var gotNewValues, gotOldValues;
             scope.aValue = 1;
@@ -771,6 +771,17 @@ describe('Scope', function () {
             scope.$digest();
             expect(gotNewValues).toEqual([1, 3]);
             expect(gotOldValues).toEqual([1, 2]);
+        });
+
+        it('calls the listener once when the watch array is empty', function () {
+            var gotNewValues, gotOldValues;
+            scope.$watchGroup([], function (newValues, oldValues, scope) {
+                gotNewValues = newValues;
+                gotOldValues = oldValues;
+            });
+            scope.$digest();
+            expect(gotNewValues).toEqual([]);
+            expect(gotOldValues).toEqual([]);
         });
 
     });

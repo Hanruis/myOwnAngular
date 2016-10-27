@@ -18,21 +18,24 @@ function initWatchVal() { }
 function noop() { }
 
 Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
-    this.$$watchers.push({
+
+    var watcher = {
         watchFn: watchFn,
         listenerFn: listenerFn || noop,
         valueEqual: !!valueEqual,
         // 如果 scope 的属性是 undefined 的话，怎么破？ 怎么比较新旧值？？--》答案是将一个函数赋值给 last
         last: initWatchVal
-    });
+    }
+
+    this.$$watchers.unshift(watcher);
     this.$$lastDirtyWatch = null
 
     var self = this    
     return function () {
-        var index = _.findIndex(self.$$watchers, function (watcher) {
-            return watcher.watchFn === watchFn
-        })
-        self.$$watchers.splice(index,1)
+        var index = self.$$watchers.indexOf(watcher)
+        if (index > -1) {
+            self.$$watchers.splice(index,1)
+        }
     }
 
 };
@@ -47,7 +50,7 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
 Scope.prototype.$$digestOnce = function () {
     var self = this;
     var dirty;
-    _.forEach(this.$$watchers, function (watcher) {
+    _.forEachRight(this.$$watchers, function (watcher) {
         try {
             // 作者是把变量放在循环的外面。
             // 其实不太懂为什么觉得其实放在里面也没什么关系。

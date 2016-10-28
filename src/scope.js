@@ -260,3 +260,13 @@ Scope.prototype.$$flushApplyAsync = function () {
 Scope.prototype.$$postDigest = function (fn) {
     this.$$postDigestQueue.push(fn);
 };
+
+
+Scope.prototype.$new = function () {
+    // var child = Object.create(this)
+    // return child
+    var ChildScope = function () { }
+    ChildScope.prototype = this
+    var child = new ChildScope()
+    return child
+}

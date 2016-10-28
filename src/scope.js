@@ -30,14 +30,14 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
     }
 
     this.$$watchers.unshift(watcher);
-    this.$$lastDirtyWatch = null
+    this.$$root.$$lastDirtyWatch = null
 
     var self = this
     return function () {
         var index = self.$$watchers.indexOf(watcher)
         if (index > -1) {
             self.$$watchers.splice(index, 1)
-            self.$$lastDirtyWatch = null
+            self.$$root.$$lastDirtyWatch = null
         }
     }
 
@@ -118,12 +118,12 @@ Scope.prototype.$$digestOnce = function () {
                     newValue = watcher.watchFn(scope);
                     oldValue = watcher.last;
                     if (!scope.$$areEqual(newValue, oldValue, watcher.valueEqual)) {
-                        scope.$$lastDirtyWatch = watcher;
+                        scope.$$root.$$lastDirtyWatch = watcher;
                         watcher.last = (watcher.valueEqual ? _.cloneDeep(newValue) : newValue);
                         // 这里为什么要做条件表达式，来使得给到 listener 的 oldValue 不会是 initWatchVal
                         watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), scope);
                         dirty = true;
-                    } else if (scope.$$lastDirtyWatch === watcher) {
+                    } else if (scope.$$root.$$lastDirtyWatch === watcher) {
                         continueLoop = false
                         return false;
                     }
@@ -140,7 +140,7 @@ Scope.prototype.$$digestOnce = function () {
 Scope.prototype.$digest = function () {
     var dirty;
     var ttl = 10;
-    this.$$lastDirtyWatch = null;
+    this.$$root.$$lastDirtyWatch = null;
     var self = this;
     this.$beginPhase("$digest");
 
@@ -158,7 +158,6 @@ Scope.prototype.$digest = function () {
             } catch (error) {
                 console.error(error);
             }
-
         }
 
         dirty = this.$$digestOnce();
@@ -210,7 +209,7 @@ Scope.prototype.$evalAsync = function (evalFn) {
     if (!self.$$phase && !self.$$asyncQueue.length) {
         setTimeout(function () {
             if (self.$$asyncQueue.length) {
-                self.$digest();
+                self.$$root.$digest();
             }
         }, 0);
     }
@@ -274,7 +273,7 @@ Scope.prototype.$new = function () {
     this.$$children.push(child)
     child.$$watchers = []
     child.$$children = []
-    child.$$lastDirtyWatch = null
+    // child.$$lastDirtyWatch = null
     child.$$root = this.$$root
     return child
 }

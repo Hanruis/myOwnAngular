@@ -144,8 +144,8 @@ Scope.prototype.$digest = function () {
     var self = this;
     this.$beginPhase("$digest");
 
-    if (this.$$applyAsyncId) {
-        clearTimeout(this.$$applyAsyncId);
+    if (this.$$root.$$applyAsyncId) {
+        clearTimeout(this.$$root.$$applyAsyncId);
         this.$$flushApplyAsync();
     }
 
@@ -240,8 +240,8 @@ Scope.prototype.$applyAsync = function (expr) {
         self.$eval(expr);
     });
 
-    if (self.$$applyAsyncId === null) {
-        self.$$applyAsyncId = setTimeout(function () {
+    if (self.$$root.$$applyAsyncId === null) {
+        self.$$root.$$applyAsyncId = setTimeout(function () {
             self.$apply(_.bind(self.$$flushApplyAsync, self));
         }, 0);
     }
@@ -257,7 +257,7 @@ Scope.prototype.$$flushApplyAsync = function () {
         }
 
     }
-    this.$$applyAsyncId = null;
+    this.$$root.$$applyAsyncId = null;
 };
 
 
@@ -266,15 +266,23 @@ Scope.prototype.$$postDigest = function (fn) {
 };
 
 
-Scope.prototype.$new = function () {
-    var ChildScope = function () { }
-    ChildScope.prototype = this
-    var child = new ChildScope()
-    this.$$children.push(child)
+Scope.prototype.$new = function (isolate, parent) {
+    var child
+    parent = parent || this
+    if (isolate) {
+        child = new Scope()
+        child.$$root = parent.$$root
+        child.$$asyncQueue = parent.$$asyncQueue
+        child.$$postDigestQueue = parent.$$postDigestQueue
+        child.$$applyAsyncQueue = parent.$$applyAsyncQueue
+    } else {
+        var ChildScope = function () { }
+        ChildScope.prototype = this
+        child = new ChildScope()
+    }
+    parent.$$children.push(child)
     child.$$watchers = []
     child.$$children = []
-    // child.$$lastDirtyWatch = null
-    child.$$root = this.$$root
     return child
 }
 

@@ -6,7 +6,7 @@ function Scope() {
     this.$$lastDirtyWatch = null
     this.$$asyncQueue = []
     this.$$children = []
-    // 使用这个的原因，可能是为了避免，在 $apply 的时候启动 $digest 。在 $digest 的时候 $apply
+        // 使用这个的原因，可能是为了避免，在 $apply 的时候启动 $digest 。在 $digest 的时候 $apply
     this.$$phase = null
     this.$$applyAsyncQueue = []
     this.$$applyAsyncId = null
@@ -51,7 +51,7 @@ Scope.prototype.$watchGroup = function (watchFns, listener) {
 
     var changeReactionScheduled = false
     var firstRun = true
-    
+
     if (!watchFns.length) {
         var shouldCall = true
         this.$evalAsync(function () {
@@ -62,7 +62,7 @@ Scope.prototype.$watchGroup = function (watchFns, listener) {
         return function () {
             shouldCall = false
         }
-    }    
+    }
 
     var destroyFunctions = _.map(watchFns, function (watchFn, index) {
         return self.$watch(watchFn, function (oldValue, newValue) {
@@ -134,7 +134,7 @@ Scope.prototype.$$digestOnce = function () {
         });
         return continueLoop
     })
-        return dirty;
+    return dirty;
 };
 
 Scope.prototype.$digest = function () {
@@ -276,13 +276,14 @@ Scope.prototype.$new = function (isolate, parent) {
         child.$$postDigestQueue = parent.$$postDigestQueue
         child.$$applyAsyncQueue = parent.$$applyAsyncQueue
     } else {
-        var ChildScope = function () { }
+        var ChildScope = function () {}
         ChildScope.prototype = this
         child = new ChildScope()
     }
     parent.$$children.push(child)
     child.$$watchers = []
     child.$$children = []
+    child.$parent = parent
     return child
 }
 
@@ -294,4 +295,14 @@ Scope.prototype.$$everyScope = function (fn) {
     } else {
         return false
     }
+}
+
+Scope.prototype.$destroy = function () {
+    if (this.$parent) {
+        var index = this.$parent.$$children.indexOf(this)
+        if (index > -1) {
+            this.$parent.$$children.splice(index, 1)
+        }
+    }
+    this.$$watchers = null
 }

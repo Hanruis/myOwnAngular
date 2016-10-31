@@ -43,6 +43,48 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
 
 };
 
+
+Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
+    var self = this
+    var newValue
+    var oldValue
+    var changeCount = 0
+
+    var internalWatchFn = function (scope) {
+        newValue = watchFn(scope)
+
+        if (_.isObject(newValue)) {
+            if (_.isArray(newValue)) {
+                if (!_.isArray(oldValue)) {
+                    changeCount++
+                    oldValue = []
+                    // oldValue = newValue.slice(0)
+                }
+                if (newValue.length !== oldValue.length) {
+                    changeCount++
+                    oldValue.length = newValue.length
+                    // oldValue = newValue.slice(0)
+                }
+            } else {
+
+            }
+        } else {
+            if (!self.$$areEqual(newValue, oldValue, false)) {
+                changeCount++
+            }
+            oldValue = newValue
+        }
+
+        return changeCount
+    }
+    var internalListenerFn = function () {
+        listenerFn(newValue, oldValue, self)
+    }
+
+    return this.$watch(internalWatchFn, internalListenerFn)
+}
+
+
 Scope.prototype.$watchGroup = function (watchFns, listener) {
     var self = this
 

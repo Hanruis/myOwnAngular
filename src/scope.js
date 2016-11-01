@@ -419,10 +419,20 @@ Scope.prototype.$emit = function (eventName) {
     var event = this.$$createEvent(eventName)
     var additionalArgs = _.drop(arguments)
     var scope = this
+    var propagation = true
+
+    event.stopPropagation = function () {
+        propagation = false
+    }
+    
     do {
+        event.currentScope = scope
         scope.$$fireEventOnScope(event, additionalArgs)
         scope = scope.$parent
-    } while (scope)
+    } while (scope && propagation )
+
+    event.currentScope = null
+
     return event
 }
 
@@ -431,9 +441,12 @@ Scope.prototype.$broadcast = function (eventName) {
     var additionalArgs = _.drop(arguments)
 
     this.$$everyScope(function (scope) {
+        event.currentScope = scope
         scope.$$fireEventOnScope(event, additionalArgs)
         return true
     })
+
+    event.currentScope = null    
 
     return event
 }
@@ -459,6 +472,7 @@ Scope.prototype.$$fireEventOnScope = function (event, additionalArgs) {
 
 Scope.prototype.$$createEvent = function (eventName) {
     return {
-        name: eventName
+        name: eventName,
+        targetScope: this
     }
 }

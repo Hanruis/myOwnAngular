@@ -401,16 +401,44 @@ Scope.prototype.$destroy = function () {
 }
 
 
-Scope.prototype.$on = function (eventName, callBack) {
+Scope.prototype.$on = function (eventName, listener) {
     if (!this.$$listeners.hasOwnProperty(eventName)) {
         this.$$listeners[eventName] = [] 
     }
-    this.$$listeners[eventName].push(callBack)
+    this.$$listeners[eventName].push(listener)
 
     return function () {
-        var index = this.$$listeners[eventName].indexOf(callBack)
+        var index = this.$$listeners[eventName].indexOf(listener)
         if (index > -1) {
             return this.$$listeners[eventName].splice(index, 1)
         }
     }
+}
+
+Scope.prototype.$emit = function (eventName) {
+    var additionalArgs = _.drop(arguments)
+    return this.$$fireEventOnScope(eventName, additionalArgs)
+}
+
+Scope.prototype.$broadcast = function (eventName) {
+    var additionalArgs = _.drop(arguments)
+    return this.$$fireEventOnScope(eventName, additionalArgs)
+}
+
+Scope.prototype.$$fireEventOnScope = function (eventName, additionalArgs) {
+    var event = creaetEvent(eventName)
+    var listenerArgs = [event].concat(additionalArgs)
+    var self = this
+    _.forEach(this.$$listeners[eventName] || [], function (listener) {
+        listener.apply(null, listenerArgs)
+    })
+
+    return event
+    
+    function creaetEvent(name, config) {
+        return {
+            name:name
+        }
+    }
+
 }

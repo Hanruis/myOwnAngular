@@ -391,6 +391,7 @@ Scope.prototype.$$everyScope = function (fn) {
 }
 
 Scope.prototype.$destroy = function () {
+    this.$broadcast('$destroy')
     if (this.$parent) {
         var index = this.$parent.$$children.indexOf(this)
         if (index > -1) {
@@ -398,6 +399,7 @@ Scope.prototype.$destroy = function () {
         }
     }
     this.$$watchers = null
+    this.$$listeners = {}
 }
 
 
@@ -462,7 +464,12 @@ Scope.prototype.$$fireEventOnScope = function (event, additionalArgs) {
         if (listeners[i] === null) {
             listeners.splice(i, 1)
         } else {
-            listeners[i].apply(null, listenerArgs)
+            try {
+                listeners[i].apply(null, listenerArgs)
+            } catch (error) {
+                console.error(error)
+            }
+            
             i++
         }
     }

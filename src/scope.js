@@ -471,8 +471,13 @@ Scope.prototype.$$fireEventOnScope = function (event, additionalArgs) {
 }
 
 Scope.prototype.$$createEvent = function (eventName) {
-    return {
+    var event = {
         name: eventName,
-        targetScope: this
+        targetScope: this,
+        defaultPrevented:false, 
+        preventDefault: function () {
+            event.defaultPrevented = true
+        }
     }
+    return event
 }

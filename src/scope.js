@@ -54,7 +54,7 @@ Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
     var veryOldValue
     var trackVeryOldValue = (listenerFn.length > 1)
     var firstRun = true
-    
+
     var internalWatchFn = function (scope) {
         var newLength
         newValue = watchFn(scope)
@@ -402,43 +402,63 @@ Scope.prototype.$destroy = function () {
 
 
 Scope.prototype.$on = function (eventName, listener) {
-    if (!this.$$listeners.hasOwnProperty(eventName)) {
-        this.$$listeners[eventName] = [] 
+    var listeners = this.$$listeners[eventName]
+    if (!listeners) {
+        this.$$listeners[eventName] = listeners = []
     }
-    this.$$listeners[eventName].push(listener)
-
+    listeners.push(listener)
     return function () {
-        var index = this.$$listeners[eventName].indexOf(listener)
+        var index = listeners.indexOf(listener)
         if (index > -1) {
-            return this.$$listeners[eventName].splice(index, 1)
+            return listeners[index] = null
         }
     }
 }
 
 Scope.prototype.$emit = function (eventName) {
+    var event = this.$$createEvent(eventName)
     var additionalArgs = _.drop(arguments)
-    return this.$$fireEventOnScope(eventName, additionalArgs)
+    var scope = this
+    do {
+        scope.$$fireEventOnScope(event, additionalArgs)
+        scope = scope.$parent
+    } while (scope)
+    return event
 }
 
 Scope.prototype.$broadcast = function (eventName) {
+    var event = this.$$createEvent(eventName)
     var additionalArgs = _.drop(arguments)
-    return this.$$fireEventOnScope(eventName, additionalArgs)
-}
 
-Scope.prototype.$$fireEventOnScope = function (eventName, additionalArgs) {
-    var event = creaetEvent(eventName)
-    var listenerArgs = [event].concat(additionalArgs)
-    var self = this
-    _.forEach(this.$$listeners[eventName] || [], function (listener) {
-        listener.apply(null, listenerArgs)
+    this.$$everyScope(function (scope) {
+        scope.$$fireEventOnScope(event, additionalArgs)
+        return true
     })
 
     return event
-    
-    function creaetEvent(name, config) {
-        return {
-            name:name
+}
+
+Scope.prototype.$$fireEventOnScope = function (event, additionalArgs) {
+    var listenerArgs = [event].concat(additionalArgs)
+    var eventName = event.name
+    var listeners = this.$$listeners[eventName] || []
+    var self = this
+    var i = 0
+
+    while (i < listeners.length) {
+        if (listeners[i] === null) {
+            listeners.splice(i, 1)
+        } else {
+            listeners[i].apply(null, listenerArgs)
+            i++
         }
     }
 
+    return event
+}
+
+Scope.prototype.$$createEvent = function (eventName) {
+    return {
+        name: eventName
+    }
 }

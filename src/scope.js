@@ -12,6 +12,7 @@ function Scope() {
     this.$$applyAsyncId = null
     this.$$postDigestQueue = []
     this.$$root = this
+    this.$$listeners = {}
 }
 
 
@@ -375,6 +376,7 @@ Scope.prototype.$new = function (isolate, parent) {
     child.$$watchers = []
     child.$$children = []
     child.$parent = parent
+    child.$$listeners = {}
     return child
 }
 
@@ -396,4 +398,19 @@ Scope.prototype.$destroy = function () {
         }
     }
     this.$$watchers = null
+}
+
+
+Scope.prototype.$on = function (eventName, callBack) {
+    if (!this.$$listeners.hasOwnProperty(eventName)) {
+        this.$$listeners[eventName] = [] 
+    }
+    this.$$listeners[eventName].push(callBack)
+
+    return function () {
+        var index = this.$$listeners[eventName].indexOf(callBack)
+        if (index > -1) {
+            return this.$$listeners[eventName].splice(index, 1)
+        }
+    }
 }

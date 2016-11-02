@@ -47,67 +47,6 @@ describe('filter', function () {
     });
 
 
-    it('can parse filter expressions', function () {
-        register('upcase', function () {
-            return function (str) {
-                return str.toUpperCase();
-            }
-        })
-
-        var fn = parse('aString | upcase');
-
-        expect(fn({
-            aString: 'Hello'
-        })).toEqual('HELLO');
-    });
-
-
-
-    it('can parse filter chain expressions', function () {
-        register('upcase', function () {
-            return function (value) {
-                return value.toUpperCase()
-            }
-        })
-
-        register('exclamate', function () {
-            return function (value) {
-                return value + "!"
-            }
-        })
-
-        var fn = parse('"hello" | upcase | exclamate ');
-
-        expect(fn()).toEqual("HELLO!");
-
-    });
-
-
-
-    it('can pass an additional argument to fitlers', function () {
-        register('repeat', function () {
-            return function (str, times) {
-                return _.repeat(str, times);
-            };
-        })
-        var fn = parse('"hello" | repeat:3');
-        expect(fn()).toBe('hellohellohello');
-
-    });
-
-
-    it('can pass serval additional arguments to filters', function () {
-        register('surround', function () {
-            return function (s, left, right) {
-                return left + s + right;
-            }
-        })
-
-        var fn = parse('"hello" | surround:"*":"!" ');
-        expect(fn()).toEqual('*hello!');
-
-    });
-
     it('is available through injector', function () {
         var myFilter = function () {};
         var injector = createInjector(['ng', function ($filterProvider) {

@@ -1,12 +1,11 @@
-var filters = {}
-
 function $FilterProvider($provide) {
+    var filters = {}
     this.register = function (name, factory) {
-
+        var self = this;
         if (_.isObject(name)) {
-            return _.map(name, function (value, key) {
-                return filters[key] = value;
-            })
+            return _.map(name, function (factory, name) {
+                return self.register(name, factory);
+            });
         } else {
             return $provide.factory(name + 'Filter', factory)
         }

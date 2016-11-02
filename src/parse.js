@@ -35,9 +35,16 @@ var OPERATROS = {
 
 
 function parse(expr) {
-    var lexer = new Lexer();
-    var parser = new Parser(lexer);
-    return parser.parse(expr)
+    switch (typeof expr) {
+        case 'string':
+            var lexer = new Lexer();
+            var parser = new Parser(lexer);
+            return parser.parse(expr);
+        case 'function':
+            return expr;
+        default:
+            return _.noop;
+    }
 }
 
 
@@ -582,7 +589,7 @@ AST.prototype.ternary = function () {
 AST.prototype.filter = function () {
     var left = this.assignment();
 
-    while(this.expect("|")) {
+    while (this.expect("|")) {
         var args = [left];
         left = {
             type: AST.CallExpression,
@@ -590,7 +597,7 @@ AST.prototype.filter = function () {
             arguments: args,
             filter: true
         }
-        while(this.expect(":")){
+        while (this.expect(":")) {
             args.push(this.assignment());
         }
     }
@@ -601,8 +608,9 @@ AST.prototype.filter = function () {
 
 
 
-function ASTCompiler(astBuilder) {
+function ASTCompiler(astBuilder, $filter) {
     this.astBuilder = astBuilder;
+    this.$filter = $filter;
 }
 
 ASTCompiler.prototype.compile = function (text) {
@@ -632,8 +640,8 @@ ASTCompiler.prototype.compile = function (text) {
         ensureSafeObject,
         ensureSafeFunction,
         ifDefined,
-        filter
-        );
+        this.$filter
+    );
     /* jshint +W054 */
 };
 
@@ -889,10 +897,10 @@ var APPLY = Function.prototype.apply;
 var BIND = Function.prototype.bind;
 
 
-function Parser(lexer) {
+function Parser(lexer, $filter) {
     this.lexer = lexer;
     this.ast = new AST(this.lexer);
-    this.ASTCompiler = new ASTCompiler(this.ast);
+    this.ASTCompiler = new ASTCompiler(this.ast, $filter);
 }
 
 
@@ -944,4 +952,38 @@ function ensureSafeFunction(obj) {
 
 function ifDefined(value, defaultValue) {
     return _.isUndefined(value) ? defaultValue : value;
+}
+
+
+function $ParseProvider() {
+
+    this.$get = ['$filter', function ($filter) {
+        return function (expr) {
+            switch (typeof expr) {
+                case 'string':
+                    var lexer = new Lexer();
+                    var parser = new Parser(lexer, $filter);
+                    var oneTime = false;
+                    if (expr.charAt(0) === ':' && expr.charAt(1) === ':') {
+                        oneTime = true;
+                        expr = expr.substring(2);
+                    }
+                    var parseFn = parser.parse(expr);
+
+                    if (parseFn.constant) {
+                        parseFn.$$watchDelegate = constantWatchDelegate;
+                    } else if (oneTime) {
+                        parseFn.$$watchDelegate = parseFn.literal ? oneTimeLiteralWatchDelegate : oneTimeWatchDelegate;
+                    } else if (parseFn.inputs) {
+                        parseFn.$$watchDelegate = inputsWatchDelegate;
+                    }
+                    return parseFn;
+                case 'function':
+                    return expr;
+                default:
+                    return _.noop;
+            }
+        }
+    }]
+
 }

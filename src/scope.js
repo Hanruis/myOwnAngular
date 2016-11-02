@@ -1,4 +1,5 @@
 /* jshint globalstrict: true */
+/* global parse: false */
 'use strict';
 
 function Scope() {
@@ -23,7 +24,7 @@ function noop() {}
 Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
 
     var watcher = {
-        watchFn: watchFn,
+        watchFn: parse(watchFn),
         listenerFn: listenerFn || noop,
         valueEqual: !!valueEqual,
         // 如果 scope 的属性是 undefined 的话，怎么破？ 怎么比较新旧值？？--》答案是将一个函数赋值给 last
@@ -55,6 +56,7 @@ Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
     var trackVeryOldValue = (listenerFn.length > 1)
     var firstRun = true
 
+    watchFn = parse(watchFn)    
     var internalWatchFn = function (scope) {
         var newLength
         newValue = watchFn(scope)
@@ -282,7 +284,7 @@ Scope.prototype.$$areEqual = function (newValue, oldValue, valueEqual) {
 };
 
 Scope.prototype.$eval = function (expr, locals) {
-    return expr(this, locals);
+    return parse(expr)(this, locals);
 };
 
 Scope.prototype.$apply = function (applyFn) {

@@ -35,7 +35,8 @@ function setupModuleLoader(window) {
             factory: invokeLater('$provide', 'factory'),
             value: invokeLater('$provide', 'value'),
             service: invokeLater('$provide', 'service'),
-            decorator:invokeLater('$provide', 'decorator'),
+            decorator: invokeLater('$provide', 'decorator'),
+            filter: invokeLater('$filterProvider', 'register'),
             run: function (fn) {
                 moduleInstance._runBlocks.push(fn)
                 return moduleInstance

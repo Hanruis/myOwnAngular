@@ -99,5 +99,3 @@ function filterFilter() {
     }
 
 }
-
-register('filter', filterFilter);

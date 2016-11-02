@@ -1,20 +1,23 @@
-var filters= {}
+var filters = {}
 
-function register(name, factory) {
-    
-    if( _.isObject(name) ){
-        return _.map(name, function(value,key){
-            return filters[key] = value;
-        })
-    }else{
-        var filter = factory()
-        filters[name] = filter;
-        return filter
+function $FilterProvider($provide) {
+    this.register = function (name, factory) {
+
+        if (_.isObject(name)) {
+            return _.map(name, function (value, key) {
+                return filters[key] = value;
+            })
+        } else {
+            return $provide.factory(name + 'Filter', factory)
+        }
     }
-    
-    
-}
 
-function filter(name) {
-    return filters[name];
+    this.$get = ['$injector', function ($injector) {
+        return function filter(name) {
+            return $injector.get(name + 'Filter');
+        }
+    }]
+
+    this.register('filter', filterFilter);
 }
+$FilterProvider.$inject = ['$provide'];

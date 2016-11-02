@@ -466,13 +466,17 @@ describe('parse', function () {
 
     it('can assign a non-computed object property', function () {
         var fn = parse('anObject.anAttribute = 42');
-        var scope = { anObject: {} };
+        var scope = {
+            anObject: {}
+        };
         fn(scope);
         expect(scope.anObject.anAttribute).toBe(42);
     });
     it('can assign a nested object property', function () {
         var fn = parse('anArray[0].anAttribute = 42');
-        var scope = { anArray: [{}] };
+        var scope = {
+            anArray: [{}]
+        };
         fn(scope);
         expect(scope.anArray[0].anAttribute).toBe(42);
     });
@@ -487,107 +491,166 @@ describe('parse', function () {
     it('does not allow calling the function constructor', function () {
         expect(function () {
             var fn = parse('aFunction.constructor("return window;")()');
-            fn({ aFunction: function () { } });
+            fn({
+                aFunction: function () {}
+            });
         }).toThrow();
     });
     it('does not allow accessing __proto__', function () {
         expect(function () {
             var fn = parse('obj.__proto__');
-            fn({ obj: {} });
+            fn({
+                obj: {}
+            });
         }).toThrow();
     });
     it('does not allow calling __defineGetter__', function () {
         expect(function () {
             var fn = parse('obj.__defineGetter__("evil", fn)');
-            fn({ obj: {}, fn: function () { } });
+            fn({
+                obj: {},
+                fn: function () {}
+            });
         }).toThrow();
     });
     it('does not allow calling __defineSetter__', function () {
         expect(function () {
             var fn = parse('obj.__defineSetter__("evil", fn)');
-            fn({ obj: {}, fn: function () { } });
+            fn({
+                obj: {},
+                fn: function () {}
+            });
         }).toThrow();
     });
     it('does not allow calling __lookupGetter__', function () {
         expect(function () {
             var fn = parse('obj.__lookupGetter__("evil")');
-            fn({ obj: {} });
+            fn({
+                obj: {}
+            });
         }).toThrow();
     });
     it('does not allow calling __lookupSetter__', function () {
         expect(function () {
             var fn = parse('obj.__lookupSetter__("evil")');
-            fn({ obj: {} });
+            fn({
+                obj: {}
+            });
         }).toThrow();
     });
 
     it('does not allow accessing window as computed property', function () {
         var fn = parse('anObject["wnd"]');
-        expect(function () { fn({ anObject: { wnd: window } }); }).toThrow();
+        expect(function () {
+            fn({
+                anObject: {
+                    wnd: window
+                }
+            });
+        }).toThrow();
     });
     it('does not allow accessing window as non-computed property', function () {
         var fn = parse('anObject.wnd');
-        expect(function () { fn({ anObject: { wnd: window } }); }).toThrow();
+        expect(function () {
+            fn({
+                anObject: {
+                    wnd: window
+                }
+            });
+        }).toThrow();
     });
     it('does not allow passing window as function argument', function () {
         var fn = parse('aFunction(wnd)');
         expect(function () {
-            fn({ aFunction: function () { }, wnd: window });
+            fn({
+                aFunction: function () {},
+                wnd: window
+            });
         }).toThrow();
     });
     it('does not allow calling methods on window', function () {
         var fn = parse('wnd.scrollTo(0)');
         expect(function () {
-            fn({ wnd: window });
+            fn({
+                wnd: window
+            });
         }).toThrow();
     });
     it('does not allow functions to return window', function () {
         var fn = parse('getWnd()');
-        expect(function () { fn({ getWnd: _.constant(window) }); }).toThrow();
+        expect(function () {
+            fn({
+                getWnd: _.constant(window)
+            });
+        }).toThrow();
     });
     it('does not allow assigning window', function () {
         var fn = parse('wnd = anObject');
         expect(function () {
-            fn({ anObject: window });
+            fn({
+                anObject: window
+            });
         }).toThrow();
     });
     it('does not allow referencing window', function () {
         var fn = parse('wnd');
         expect(function () {
-            fn({ wnd: window });
+            fn({
+                wnd: window
+            });
         }).toThrow();
     });
     it('does not allow calling functions on DOM elements', function () {
         var fn = parse('el.setAttribute("evil", "true")');
-        expect(function () { fn({ el: document.documentElement }); }).toThrow();
+        expect(function () {
+            fn({
+                el: document.documentElement
+            });
+        }).toThrow();
     });
 
     it('does not allow calling the aliased function constructor', function () {
         var fn = parse('fnConstructor("return window;")');
         expect(function () {
-            fn({ fnConstructor: (function () { }).constructor });
+            fn({
+                fnConstructor: (function () {}).constructor
+            });
         }).toThrow();
     });
     it('does not allow calling functions on Object', function () {
         var fn = parse('obj.create({})');
         expect(function () {
-            fn({ obj: Object });
+            fn({
+                obj: Object
+            });
         }).toThrow();
     });
 
     it('does not allow calling call', function () {
         var fn = parse('fun.call(obj)');
-        expect(function () { fn({ fun: function () { }, obj: {} }); }).toThrow();
+        expect(function () {
+            fn({
+                fun: function () {},
+                obj: {}
+            });
+        }).toThrow();
     });
 
     it('does not allow calling apply', function () {
         var fn = parse('fun.apply(obj)');
-        expect(function () { fn({ fun: function () { }, obj: {} }); }).toThrow();
+        expect(function () {
+            fn({
+                fun: function () {},
+                obj: {}
+            });
+        }).toThrow();
     });
 
     it('parses a unary +', function () {
         expect(parse('+42')()).toBe(42);
-        expect(parse('+a')({ a: 42 })).toBe(42);
+        expect(parse('+a')({
+            a: 42
+        })).toBe(42);
     });
 
     it('replaces undefined with zero for unary +', function () {
@@ -597,14 +660,22 @@ describe('parse', function () {
     it('parses a unary !', function () {
         expect(parse('!true')()).toBe(false);
         expect(parse('!42')()).toBe(false);
-        expect(parse('!a')({ a: false })).toBe(true);
-        expect(parse('!!a')({ a: false })).toBe(false);
+        expect(parse('!a')({
+            a: false
+        })).toBe(true);
+        expect(parse('!!a')({
+            a: false
+        })).toBe(false);
     });
 
     it('parses a unary -', function () {
         expect(parse('-42')()).toBe(-42);
-        expect(parse('-a')({ a: -42 })).toBe(42);
-        expect(parse('--a')({ a: -42 })).toBe(-42);
+        expect(parse('-a')({
+            a: -42
+        })).toBe(42);
+        expect(parse('--a')({
+            a: -42
+        })).toBe(-42);
         expect(parse('-a')({})).toBe(0);
     });
 
@@ -691,14 +762,22 @@ describe('parse', function () {
 
     it('short-circuits AND', function () {
         var invoked;
-        var scope = { fn: function () { invoked = true; } };
+        var scope = {
+            fn: function () {
+                invoked = true;
+            }
+        };
         parse('false && fn()')(scope);
         expect(invoked).toBeUndefined();
     });
 
     it('short-circuits OR', function () {
         var invoked;
-        var scope = { fn: function () { invoked = true; } };
+        var scope = {
+            fn: function () {
+                invoked = true;
+            }
+        };
         parse('true || fn()')(scope);
         expect(invoked).toBeUndefined();
     });
@@ -712,8 +791,12 @@ describe('parse', function () {
     });
 
     it('parses the ternary expression', function () {
-        expect(parse('a === 42 ? true : false')({ a: 42 })).toBe(true);
-        expect(parse('a === 42 ? true : false')({ a: 43 })).toBe(false);
+        expect(parse('a === 42 ? true : false')({
+            a: 42
+        })).toBe(true);
+        expect(parse('a === 42 ? true : false')({
+            a: 43
+        })).toBe(false);
     });
 
     it('parses OR with a higher precedence than ternary', function () {
@@ -732,19 +815,33 @@ describe('parse', function () {
     it('parses parentheses altering precedence order', function () {
         expect(parse('21 * (3 - 1)')()).toBe(42);
         expect(parse('false && (true || true)')()).toBe(false);
-        expect(parse('-((a % 2) === 0 ? 1 : 2)')({ a: 42 })).toBe(-1);
+        expect(parse('-((a % 2) === 0 ? 1 : 2)')({
+            a: 42
+        })).toBe(-1);
     });
 
     it('parses several statements', function () {
         var fn = parse('a = 1; b = 2; c = 3');
         var scope = {};
         fn(scope);
-        expect(scope).toEqual({ a: 1, b: 2, c: 3 });
+        expect(scope).toEqual({
+            a: 1,
+            b: 2,
+            c: 3
+        });
     });
 
     it('returns the value of the last statement', function () {
         expect(parse('a = 1; b = 2; a + b')({})).toBe(3);
     });
 
-})
+    it('returns the function itself when given one', function () {
+        var fn = function () {};
+        expect(parse(fn)).toBe(fn);
+    });
 
+    it('still returns a function when given no argument', function () {
+        expect(parse()).toEqual(jasmine.any(Function));
+    });
+
+})

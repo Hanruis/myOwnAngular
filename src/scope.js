@@ -22,9 +22,16 @@ function initWatchVal() {}
 function noop() {}
 
 Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
+    var self = this
+
+    watchFn = parse(watchFn);
+
+    if (watchFn.$$watchDelegate) {
+        return watchFn.$$watchDelegate(self, listenerFn, valueEqual, watchFn);
+    }
 
     var watcher = {
-        watchFn: parse(watchFn),
+        watchFn: watchFn,
         listenerFn: listenerFn || noop,
         valueEqual: !!valueEqual,
         // 如果 scope 的属性是 undefined 的话，怎么破？ 怎么比较新旧值？？--》答案是将一个函数赋值给 last
@@ -34,7 +41,6 @@ Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
     this.$$watchers.unshift(watcher);
     this.$$root.$$lastDirtyWatch = null
 
-    var self = this
     return function () {
         var index = self.$$watchers.indexOf(watcher)
         if (index > -1) {

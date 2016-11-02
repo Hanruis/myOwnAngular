@@ -629,7 +629,7 @@ ASTCompiler.prototype.compile = function (text) {
         "}; return fn; "
 
     /* jshint -W054 */
-    return new Function(
+    var fn = new Function(
         'ensureSafeMemberName',
         'ensureSafeObject',
         'ensureSafeFunction',
@@ -642,6 +642,8 @@ ASTCompiler.prototype.compile = function (text) {
         ifDefined,
         this.$filter
     );
+    fn.literal = isLiteral(ast);
+    return fn;
     /* jshint +W054 */
 };
 
@@ -952,6 +954,14 @@ function ensureSafeFunction(obj) {
 
 function ifDefined(value, defaultValue) {
     return _.isUndefined(value) ? defaultValue : value;
+}
+
+function isLiteral(ast) {
+    return ast.body.length === 0 ||
+        ast.body.length === 1 && (
+        ast.body[0].type === AST.Literal ||
+        ast.body[0].type === AST.ArrayExpression ||
+        ast.body[0].type === AST.ObjectExpression);
 }
 
 

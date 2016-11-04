@@ -1235,9 +1235,9 @@ function oneTimeLiteralWatchDelegate(scope, listenerFn, valueEq, watchFn) {
             if (_.isFunction(listenerFn)) {
                 listenerFn.apply(this, arguments);
             }
-            if (!isAllDefined(newValue)) {
+            if (isAllDefined(newValue)) {
                 scope.$$postDigest(function () {
-                    if (!isAllDefined(lastValue)) {
+                    if (isAllDefined(lastValue)) {
                         unwatch();
                     }
                 })
@@ -1263,6 +1263,7 @@ function inputsWatchDelegate(scope, listenerFn, valueEq, watchFn) {
         if (changed) {
             lastResult = watchFn(scope);
         }
+        return lastResult;
     }, listenerFn, valueEq);
 }
 

@@ -21,7 +21,7 @@ describe('filter', function () {
         var injector = createInjector(['ng', function ($filterProvider) {
             $filterProvider.register('my', myFilterFactory)
         }])
-        var $filter = injector.$get('$filter')
+        var $filter = injector.get('$filter')
         expect($filter('my')).toBe(myFilter);
     });
 

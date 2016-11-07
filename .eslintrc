@@ -49,6 +49,7 @@
         "no-extend-native": ["error", { "exceptions": ["Promise"] }],
         "no-var": "off",
         "prefer-arrow-callback": "off",
-        "object-shorthand": "off"
+        "object-shorthand": "off",
+        "vars-on-top": "off"
     }
 }

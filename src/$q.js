@@ -42,9 +42,21 @@ function $QProvider() {
             if (this.promise.$$state.status) {
                 return;
             }
-            this.promise.$$state.value = value;
-            this.promise.$$state.status = 1;
-            scheduleProcessQueue(this.promise.$$state);
+
+            // 如果 resolve ，reject 返回了一个 promise( 已经 resolve/reject, 或者是还未完成的 )
+            // 怎么办？
+            // 本质上我们其实是需要获取这个 promise 的值，来进行下一个 promise。
+            // 这种情况下，通过 then 获取到值之后，继续 resolve 即可
+            if (value && _.isFunction(value.then)) {
+                value.then(
+                    _.bind(this.resolve, this),
+                    _.bind(this.reject, this)
+                );
+            } else {
+                this.promise.$$state.value = value;
+                this.promise.$$state.status = 1;
+                scheduleProcessQueue(this.promise.$$state);
+            }
         };
 
         Deferred.prototype.reject = function (reason) {

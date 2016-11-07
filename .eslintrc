@@ -51,6 +51,7 @@
         "prefer-arrow-callback": "off",
         "object-shorthand": "off",
         "vars-on-top": "off",
-        "max-len": "off"
+        "max-len": "off",
+        "prefer-template": "off"
     }
 }

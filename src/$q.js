@@ -187,12 +187,22 @@ function $QProvider() {
             return obj && _.isFunction(obj.then);
         }
 
-        return {
+        var $Q = function (resolver) {
+            if (!_.isFunction(resolver)) {
+                throw 'Expected function, got' + resolver;
+            }
+            var d = defer();
+
+            resolver(_.bind(d.resolve, d), _.bind(d.reject, d));
+
+            return d.promise;
+        };
+        return _.extend($Q, {
             defer: defer,
             reject: reject,
             when: when,
-            resolve: resolve,
+            resolve: when,
             all: all
-        };
+        });
     }];
 }

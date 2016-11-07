@@ -1,5 +1,4 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    "jshint.enable": true,
-    "eslint.autoFixOnSave": false
+    "jshint.enable": true
 }

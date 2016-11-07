@@ -238,4 +238,12 @@ describe('$q', function () {
         $rootScope.$apply();
         expect(rejectedSpy).toHaveBeenCalledWith('fail');
     });
+    it('fulfills on chained handler', function () {
+        var d = $q.defer();
+        var fulfilledSpy = jasmine.createSpy();
+        d.promise.catch(_.noop).then(fulfilledSpy);
+        d.resolve(42);
+        $rootScope.$apply();
+        expect(fulfilledSpy).toHaveBeenCalledWith(42);
+    });
 });

@@ -64,6 +64,10 @@ function $QProvider() {
                 var fn = handlers[state.status];
                 if (_.isFunction(fn)) {
                     deferred.resolve(fn(state.value));
+                } else if (state.status === 1) {
+                    deferred.resolve(state.value);
+                } else if (state.status === 2) {
+                    deferred.reject(state.value);
                 }
             });
             // 注意这里不能进行 state.status 的重置。

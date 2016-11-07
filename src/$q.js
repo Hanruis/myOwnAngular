@@ -27,10 +27,10 @@ function $QProvider() {
         };
 
         Promise.prototype.finally = function (callback) {
-            return this.then(function () {
-                callback();
-            }, function () {
-                callback();
+            return this.then(function (value) {
+                return handlerFinallyCallback(callback, value, true);
+            }, function (rejection) {
+                return handlerFinallyCallback(callback, rejection, false);
             });
         };
 
@@ -47,6 +47,8 @@ function $QProvider() {
             // 怎么办？
             // 本质上我们其实是需要获取这个 promise 的值，来进行下一个 promise。
             // 这种情况下，通过 then 获取到值之后，继续 resolve 即可
+            // 另外，这里为什么不做严格的类型检测呢？
+            // --> 为了和其他 promise 库做兼容。只要返回一个 thenable object 即当作是 promise 对象了。
             if (value && _.isFunction(value.then)) {
                 value.then(
                     _.bind(this.resolve, this),
@@ -100,6 +102,26 @@ function $QProvider() {
 
         function defer() {
             return new Deferred();
+        }
+
+        function makePromise(value, resolved) {
+            var d = new Deferred();
+            if (resolved) {
+                d.resolve(value);
+            } else {
+                d.reject(value);
+            }
+            return d.promise;
+        }
+
+        function handlerFinallyCallback(callback, value, resolved) {
+            var callbackValue = callback();
+            if (callbackValue && callbackValue.then) {
+                return callbackValue.then(function () {
+                    return makePromise(value, resolved);
+                });
+            }
+            return makePromise(value, resolved);
         }
 
         return {

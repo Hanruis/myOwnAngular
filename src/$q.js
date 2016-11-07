@@ -1,6 +1,5 @@
 /* jshint globalstrict: true */
 
-'use strict';
 
 function $QProvider() {
     this.$get = ['$rootScope', function ($rootScope) {
@@ -11,6 +10,11 @@ function $QProvider() {
         Promise.prototype.then = function (onFullfilled, onRejected) {
             var result = new Deferred();
             this.$$state.pending = this.$$state.pending || [];
+            // 这里 result 作为数组的第一项，隐藏着一个作用。
+            // 当第一个 promise resolve 之后。如果是 chaining 的。需要把 value 传给第二个 promise
+            // 怎么传呢？正常的想法是内部一个数组，保存每个 promise ，然后 resolve 的时候 shift 出来
+            // 而这里的做法是，将下一个 promise/deferred 保存在 pending 数组里面。当前 promise resolve 之后
+            // 直接通过 result 继续 resolve 给下一个 promise
             this.$$state.pending.push([result, onFullfilled, onRejected]);
             if (this.$$state.status > 0) {
                 scheduleProcessQueue(this.$$state);
@@ -60,14 +64,19 @@ function $QProvider() {
 
         function processQueue(state) {
             _.forEach(state.pending, function (handlers) {
+                // 注意，这里这个 deferred，是下一个 Deferred 了
                 var deferred = handlers[0];
                 var fn = handlers[state.status];
-                if (_.isFunction(fn)) {
-                    deferred.resolve(fn(state.value));
-                } else if (state.status === 1) {
-                    deferred.resolve(state.value);
-                } else if (state.status === 2) {
-                    deferred.reject(state.value);
+                try {
+                    if (_.isFunction(fn)) {
+                        deferred.resolve(fn(state.value));
+                    } else if (state.status === 1) {
+                        deferred.resolve(state.value);
+                    } else if (state.status === 2) {
+                        deferred.reject(state.value);
+                    }
+                } catch (error) {
+                    deferred.reject(error);
                 }
             });
             // 注意这里不能进行 state.status 的重置。

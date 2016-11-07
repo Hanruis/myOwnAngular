@@ -6,8 +6,8 @@ describe('$q', function () {
     var $q;
     var $rootScope;
     beforeEach(function () {
-        var injector = createInjector(['ng']);
         publishExternalAPI();
+        var injector = createInjector(['ng']);
         $q = injector.get('$q');
         $rootScope = injector.get('$rootScope');
     });
@@ -266,5 +266,21 @@ describe('$q', function () {
         d.resolve(42);
         $rootScope.$apply();
         expect(rejectedSpy).toHaveBeenCalledWith('fail');
+    });
+    it('does not reject current promise when handler throws', function () {
+        var d = $q.defer();
+        var rejectedSpy = jasmine.createSpy();
+        // d.promise.then(function () {
+        //     throw 'fail';
+        // });
+        d.promise.then(function () {
+
+        }).then(function () {
+            throw 'fail';
+        });
+        d.promise.catch(rejectedSpy);
+        d.resolve(42);
+        $rootScope.$apply();
+        expect(rejectedSpy).not.toHaveBeenCalled();
     });
 });

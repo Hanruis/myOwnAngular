@@ -4,11 +4,13 @@
 
 describe('$q', function () {
     var $q;
+    var $$q;
     var $rootScope;
     beforeEach(function () {
         publishExternalAPI();
         var injector = createInjector(['ng']);
         $q = injector.get('$q');
+        $$q = injector.get('$$q');
         $rootScope = injector.get('$rootScope');
     });
     it('can create a Deferred', function () {

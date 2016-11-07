@@ -1,26 +1,20 @@
 /* jshint globalstrict: true */
 /* global parse: false */
-'use strict';
-
 
 function $RootScopeProvider() {
-
-
     this.$get = ['$parse', function ($parse) {
-
-
         function Scope() {
-            this.$$watchers = []
-            this.$$lastDirtyWatch = null
-            this.$$asyncQueue = []
-            this.$$children = []
+            this.$$watchers = [];
+            this.$$lastDirtyWatch = null;
+            this.$$asyncQueue = [];
+            this.$$children = [];
                 // 使用这个的原因，可能是为了避免，在 $apply 的时候启动 $digest 。在 $digest 的时候 $apply
-            this.$$phase = null
-            this.$$applyAsyncQueue = []
-            this.$$applyAsyncId = null
-            this.$$postDigestQueue = []
-            this.$$root = this
-            this.$$listeners = {}
+            this.$$phase = null;
+            this.$$applyAsyncQueue = [];
+            this.$$applyAsyncId = null;
+            this.$$postDigestQueue = [];
+            this.$$root = this;
+            this.$$listeners = {};
         }
 
 
@@ -29,7 +23,7 @@ function $RootScopeProvider() {
         function noop() {}
 
         Scope.prototype.$watch = function (watchFn, listenerFn, valueEqual) {
-            var self = this
+            var self = this;
 
             watchFn = $parse(watchFn);
 
@@ -43,66 +37,64 @@ function $RootScopeProvider() {
                 valueEqual: !!valueEqual,
                 // 如果 scope 的属性是 undefined 的话，怎么破？ 怎么比较新旧值？？--》答案是将一个函数赋值给 last
                 last: initWatchVal
-            }
+            };
 
             this.$$watchers.unshift(watcher);
-            this.$$root.$$lastDirtyWatch = null
+            this.$$root.$$lastDirtyWatch = null;
 
             return function () {
-                var index = self.$$watchers.indexOf(watcher)
+                var index = self.$$watchers.indexOf(watcher);
                 if (index > -1) {
-                    self.$$watchers.splice(index, 1)
-                    self.$$root.$$lastDirtyWatch = null
+                    self.$$watchers.splice(index, 1);
+                    self.$$root.$$lastDirtyWatch = null;
                 }
-            }
-
+            };
         };
 
 
         Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
-            var self = this
-            var newValue
-            var oldValue
-            var changeCount = 0
-            var oldLength = 0
-            var veryOldValue
-            var trackVeryOldValue = (listenerFn.length > 1)
-            var firstRun = true
+            var self = this;
+            var newValue;
+            var oldValue;
+            var changeCount = 0;
+            var oldLength = 0;
+            var veryOldValue;
+            var trackVeryOldValue = (listenerFn.length > 1);
+            var firstRun = true;
 
-            watchFn = $parse(watchFn)
+            watchFn = $parse(watchFn);
             var internalWatchFn = function (scope) {
-                var newLength
-                newValue = watchFn(scope)
+                var newLength;
+                newValue = watchFn(scope);
 
                 if (_.isObject(newValue)) {
                     if (_.isArrayLike(newValue)) {
                         if (!_.isArray(oldValue)) {
-                            changeCount++
-                            oldValue = []
+                            changeCount++;
+                            oldValue = [];
                                 // oldValue = newValue.slice(0)
                         }
                         if (newValue.length !== oldValue.length) {
-                            changeCount++
-                            oldValue.length = newValue.length
+                            changeCount++;
+                            oldValue.length = newValue.length;
                                 // oldValue = newValue.slice(0)
                         }
                         _.forEach(newValue, function (ele, index) {
                             if (!self.$$areEqual(ele, oldValue[index], false)) {
-                                changeCount++
-                                oldValue[index] = ele
+                                changeCount++;
+                                oldValue[index] = ele;
                             }
-                        })
-
+                        });
                     } else {
                         if (!_.isObject(oldValue) || _.isArrayLike(oldValue)) {
-                            changeCount++
-                            oldValue = {}
-                            oldLength = 0
+                            changeCount++;
+                            oldValue = {};
+                            oldLength = 0;
                         }
 
-                        newLength = 0
+                        newLength = 0;
                         _.forOwn(newValue, function (newVal, key) {
-                            newLength++
+                            newLength++;
                             if (oldValue.hasOwnProperty(key)) {
                                 var bothNaN = _.isNaN(newVal) && _.isNaN(oldValue[key]);
                                 if (!bothNaN && oldValue[key] !== newVal) {
@@ -110,117 +102,116 @@ function $RootScopeProvider() {
                                     oldValue[key] = newVal;
                                 }
                             } else {
-                                changeCount++
-                                oldLength++
-                                oldValue[key] = newVal
+                                changeCount++;
+                                oldLength++;
+                                oldValue[key] = newVal;
                             }
-                        })
+                        });
                         if (oldLength > newLength) {
-                            changeCount++
+                            changeCount++;
                             _.forOwn(oldValue, function (oldVal, key) {
                                 if (!newValue.hasOwnProperty(key)) {
-                                    oldLength--
-                                    delete oldValue[key]
+                                    oldLength--;
+                                    delete oldValue[key];
                                 }
-                            })
+                            });
                         }
                     }
                 } else {
                     if (!self.$$areEqual(newValue, oldValue, false)) {
-                        changeCount++
+                        changeCount++;
                     }
-                    oldValue = newValue
+                    oldValue = newValue;
                 }
 
-                return changeCount
-            }
+                return changeCount;
+            };
             var internalListenerFn = function () {
                 if (firstRun) {
-                    listenerFn(newValue, newValue, self)
-                    firstRun = false
+                    listenerFn(newValue, newValue, self);
+                    firstRun = false;
                 } else {
-                    listenerFn(newValue, veryOldValue, self)
+                    listenerFn(newValue, veryOldValue, self);
                 }
                 if (trackVeryOldValue) {
-                    veryOldValue = _.clone(newValue)
+                    veryOldValue = _.clone(newValue);
                 }
-            }
+            };
 
-            return this.$watch(internalWatchFn, internalListenerFn)
-        }
+            return this.$watch(internalWatchFn, internalListenerFn);
+        };
 
 
         Scope.prototype.$watchGroup = function (watchFns, listener) {
-            var self = this
+            var self = this;
 
-            var newValues = new Array(watchFns.length)
-            var oldValues = new Array(watchFns.length)
+            var newValues = new Array(watchFns.length);
+            var oldValues = new Array(watchFns.length);
 
-            var changeReactionScheduled = false
-            var firstRun = true
+            var changeReactionScheduled = false;
+            var firstRun = true;
 
             if (!watchFns.length) {
-                var shouldCall = true
+                var shouldCall = true;
                 this.$evalAsync(function () {
                     if (shouldCall) {
-                        listener(newValues, oldValues)
+                        listener(newValues, oldValues);
                     }
-                })
+                });
                 return function () {
-                    shouldCall = false
-                }
+                    shouldCall = false;
+                };
             }
 
             var destroyFunctions = _.map(watchFns, function (watchFn, index) {
                 return self.$watch(watchFn, function (oldValue, newValue) {
-                    oldValues[index] = oldValue
-                    newValues[index] = newValue
+                    oldValues[index] = oldValue;
+                    newValues[index] = newValue;
                     if (!changeReactionScheduled) {
-                        changeReactionScheduled = true
-                        self.$evalAsync(watchGroupListener)
+                        changeReactionScheduled = true;
+                        self.$evalAsync(watchGroupListener);
                     }
-                })
-            })
+                });
+            });
 
             return function () {
                 _.forEach(destroyFunctions, function (destroyFunction) {
-                    destroyFunction()
-                })
-            }
+                    destroyFunction();
+                });
+            };
 
             function watchGroupListener() {
                 if (firstRun) {
-                    listener(newValues, newValues, self)
-                    firstRun = false
+                    listener(newValues, newValues, self);
+                    firstRun = false;
                 } else {
-                    listener(oldValues, newValues, self)
+                    listener(oldValues, newValues, self);
                 }
-                changeReactionScheduled = false
+                changeReactionScheduled = false;
             }
-
-        }
+        };
 
 
         /**
          * 这里使用 digest 的原理是，在 watcher 里面挂着上次的 value
          * 不过注意，后面会遇到 object 里面的引用的问题，这样即使 obj 的某个属性改变了，
          * obj 本身的引用没有改变，这样的话是不会引起 change 的;
-         * 
+         *
          * 作者这里，在 $$digestOnce 的时候，选择了 _.forEachRight,  不是很懂这个用意 ，(第一章部分)
          */
         Scope.prototype.$$digestOnce = function () {
-            var self = this;
+            // var self = this;
             var dirty;
             var continueLoop = true;
             this.$$everyScope(function (scope) {
-                var newValue
-                var oldValue
+                var newValue;
+                var oldValue;
                 _.forEachRight(scope.$$watchers, function (watcher) {
                     if (watcher) {
                         try {
                             // 作者是把变量放在循环的外面。
                             // 其实不太懂为什么觉得其实放在里面也没什么关系。
-                            // 如果从可读性来说，其实都一样吧。但是如果从性能来说，嗯，我觉得这个会好一点；不过现在 intel 的 
+                            // 如果从可读性来说，其实都一样吧。但是如果从性能来说，嗯，我觉得这个会好一点；不过现在 intel 的
                             // cpu 有那么多的寄存器，好像也不是什么问题呃 (─.─|||)
                             newValue = watcher.watchFn(scope);
                             oldValue = watcher.last;
@@ -231,7 +222,7 @@ function $RootScopeProvider() {
                                 watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), scope);
                                 dirty = true;
                             } else if (scope.$$root.$$lastDirtyWatch === watcher) {
-                                continueLoop = false
+                                continueLoop = false;
                                 return false;
                             }
                         } catch (error) {
@@ -239,8 +230,8 @@ function $RootScopeProvider() {
                         }
                     }
                 });
-                return continueLoop
-            })
+                return continueLoop;
+            });
             return dirty;
         };
 
@@ -248,8 +239,8 @@ function $RootScopeProvider() {
             var dirty;
             var ttl = 10;
             this.$$root.$$lastDirtyWatch = null;
-            var self = this;
-            this.$beginPhase("$digest");
+            // var self = this;
+            this.$beginPhase('$digest');
 
             if (this.$$root.$$applyAsyncId) {
                 clearTimeout(this.$$root.$$applyAsyncId);
@@ -272,7 +263,7 @@ function $RootScopeProvider() {
 
                 ttl--;
                 if ((dirty || this.$$asyncQueue.length) && (ttl === 0)) {
-                    throw "10 digest iterations reached";
+                    throw '10 digest iterations reached';
                 }
             } while (dirty || this.$$asyncQueue.length);
             this.$clearPhase();
@@ -283,7 +274,6 @@ function $RootScopeProvider() {
                 } catch (error) {
                     console.error(error);
                 }
-
             }
         };
 
@@ -302,7 +292,7 @@ function $RootScopeProvider() {
 
         Scope.prototype.$apply = function (applyFn) {
             try {
-                this.$beginPhase("$apply");
+                this.$beginPhase('$apply');
                 return this.$eval(applyFn);
             } finally {
                 this.$clearPhase();
@@ -330,7 +320,7 @@ function $RootScopeProvider() {
 
         Scope.prototype.$beginPhase = function (phase) {
             if (this.$$phase) {
-                throw this.$$phase + " already in progress";
+                throw this.$$phase + ' already in progress';
             }
             this.$$phase = phase;
         };
@@ -338,7 +328,6 @@ function $RootScopeProvider() {
         Scope.prototype.$clearPhase = function () {
             this.$$phase = null;
         };
-
 
 
         Scope.prototype.$applyAsync = function (expr) {
@@ -362,7 +351,6 @@ function $RootScopeProvider() {
                 } catch (error) {
 
                 }
-
             }
             this.$$root.$$applyAsyncId = null;
         };
@@ -374,123 +362,123 @@ function $RootScopeProvider() {
 
 
         Scope.prototype.$new = function (isolate, parent) {
-            var child
-            parent = parent || this
+            var child;
+            parent = parent || this;
             if (isolate) {
-                child = new Scope()
-                child.$$root = parent.$$root
-                child.$$asyncQueue = parent.$$asyncQueue
-                child.$$postDigestQueue = parent.$$postDigestQueue
-                child.$$applyAsyncQueue = parent.$$applyAsyncQueue
+                child = new Scope();
+                child.$$root = parent.$$root;
+                child.$$asyncQueue = parent.$$asyncQueue;
+                child.$$postDigestQueue = parent.$$postDigestQueue;
+                child.$$applyAsyncQueue = parent.$$applyAsyncQueue;
             } else {
-                var ChildScope = function () {}
-                ChildScope.prototype = this
-                child = new ChildScope()
+                var ChildScope = function () {};
+                ChildScope.prototype = this;
+                child = new ChildScope();
             }
-            parent.$$children.push(child)
-            child.$$watchers = []
-            child.$$children = []
-            child.$parent = parent
-            child.$$listeners = {}
-            return child
-        }
+            parent.$$children.push(child);
+            child.$$watchers = [];
+            child.$$children = [];
+            child.$parent = parent;
+            child.$$listeners = {};
+            return child;
+        };
 
         Scope.prototype.$$everyScope = function (fn) {
             if (fn(this)) {
                 return this.$$children.every(function (child) {
-                    return child.$$everyScope(fn)
-                })
+                    return child.$$everyScope(fn);
+                });
             } else {
-                return false
+                return false;
             }
-        }
+        };
 
         Scope.prototype.$destroy = function () {
-            this.$broadcast('$destroy')
+            this.$broadcast('$destroy');
             if (this.$parent) {
-                var index = this.$parent.$$children.indexOf(this)
+                var index = this.$parent.$$children.indexOf(this);
                 if (index > -1) {
-                    this.$parent.$$children.splice(index, 1)
+                    this.$parent.$$children.splice(index, 1);
                 }
             }
-            this.$$watchers = null
-            this.$$listeners = {}
-        }
+            this.$$watchers = null;
+            this.$$listeners = {};
+        };
 
 
         Scope.prototype.$on = function (eventName, listener) {
-            var listeners = this.$$listeners[eventName]
+            var listeners = this.$$listeners[eventName];
             if (!listeners) {
-                this.$$listeners[eventName] = listeners = []
+                this.$$listeners[eventName] = listeners = [];
             }
-            listeners.push(listener)
+            listeners.push(listener);
             return function () {
-                var index = listeners.indexOf(listener)
+                var index = listeners.indexOf(listener);
                 if (index > -1) {
-                    return listeners[index] = null
+                    return listeners[index] = null;
                 }
-            }
-        }
+            };
+        };
 
         Scope.prototype.$emit = function (eventName) {
-            var event = this.$$createEvent(eventName)
-            var additionalArgs = _.drop(arguments)
-            var scope = this
-            var propagation = true
+            var event = this.$$createEvent(eventName);
+            var additionalArgs = _.drop(arguments);
+            var scope = this;
+            var propagation = true;
 
             event.stopPropagation = function () {
-                propagation = false
-            }
+                propagation = false;
+            };
 
             do {
-                event.currentScope = scope
-                scope.$$fireEventOnScope(event, additionalArgs)
-                scope = scope.$parent
-            } while (scope && propagation)
+                event.currentScope = scope;
+                scope.$$fireEventOnScope(event, additionalArgs);
+                scope = scope.$parent;
+            } while (scope && propagation);
 
-            event.currentScope = null
+            event.currentScope = null;
 
-            return event
-        }
+            return event;
+        };
 
         Scope.prototype.$broadcast = function (eventName) {
-            var event = this.$$createEvent(eventName)
-            var additionalArgs = _.drop(arguments)
+            var event = this.$$createEvent(eventName);
+            var additionalArgs = _.drop(arguments);
 
             this.$$everyScope(function (scope) {
-                event.currentScope = scope
-                scope.$$fireEventOnScope(event, additionalArgs)
-                return true
-            })
+                event.currentScope = scope;
+                scope.$$fireEventOnScope(event, additionalArgs);
+                return true;
+            });
 
-            event.currentScope = null
+            event.currentScope = null;
 
-            return event
-        }
+            return event;
+        };
 
         Scope.prototype.$$fireEventOnScope = function (event, additionalArgs) {
-            var listenerArgs = [event].concat(additionalArgs)
-            var eventName = event.name
-            var listeners = this.$$listeners[eventName] || []
-            var self = this
-            var i = 0
+            var listenerArgs = [event].concat(additionalArgs);
+            var eventName = event.name;
+            var listeners = this.$$listeners[eventName] || [];
+            var self = this;
+            var i = 0;
 
             while (i < listeners.length) {
                 if (listeners[i] === null) {
-                    listeners.splice(i, 1)
+                    listeners.splice(i, 1);
                 } else {
                     try {
-                        listeners[i].apply(null, listenerArgs)
+                        listeners[i].apply(null, listenerArgs);
                     } catch (error) {
-                        console.error(error)
+                        console.error(error);
                     }
 
-                    i++
+                    i++;
                 }
             }
 
-            return event
-        }
+            return event;
+        };
 
         Scope.prototype.$$createEvent = function (eventName) {
             var event = {
@@ -498,14 +486,14 @@ function $RootScopeProvider() {
                 targetScope: this,
                 defaultPrevented: false,
                 preventDefault: function () {
-                    event.defaultPrevented = true
+                    event.defaultPrevented = true;
                 }
-            }
-            return event
-        }
+            };
+            return event;
+        };
 
         // All previous code from scope.js goes here.
         var $rootScope = new Scope();
         return $rootScope;
-    }]
+    }];
 }

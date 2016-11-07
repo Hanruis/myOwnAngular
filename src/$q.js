@@ -183,10 +183,6 @@ function $QProvider() {
             return makePromise(value, resolved);
         }
 
-        function isPromiseLike(obj) {
-            return obj && _.isFunction(obj.then);
-        }
-
         var $Q = function (resolver) {
             if (!_.isFunction(resolver)) {
                 throw 'Expected function, got' + resolver;
@@ -205,4 +201,11 @@ function $QProvider() {
             all: all
         });
     }];
+}
+
+
+function $$QProvider() {
+    this.$get = function () {
+
+    };
 }

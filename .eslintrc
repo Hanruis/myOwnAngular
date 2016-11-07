@@ -52,6 +52,7 @@
         "object-shorthand": "off",
         "vars-on-top": "off",
         "max-len": "off",
-        "prefer-template": "off"
+        "prefer-template": "off",
+        "linebreak-style": "off"
     }
 }

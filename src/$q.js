@@ -123,6 +123,22 @@ function $QProvider() {
             return new Deferred();
         }
 
+        function reject(rejecion) {
+            var d = defer();
+            d.reject(rejecion);
+            return d.promise;
+        }
+
+        function when(value, callback, errorback, progressback) {
+            var d = defer();
+            d.resolve(value);
+            return d.promise.then(callback, errorback, progressback);
+        }
+
+        function resolve(value) {
+            return when(value);
+        }
+
         function makePromise(value, resolved) {
             var d = new Deferred();
             if (resolved) {
@@ -143,8 +159,15 @@ function $QProvider() {
             return makePromise(value, resolved);
         }
 
+        // function isPromiseLike(obj) {
+        //     return obj && _.isFunction(obj.then);
+        // }
+
         return {
-            defer: defer
+            defer: defer,
+            reject: reject,
+            when: when,
+            resolve:resolve
         };
     }];
 }

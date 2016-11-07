@@ -7,7 +7,7 @@ function $QProvider() {
             this.$$state = {};
         }
 
-        Promise.prototype.then = function (onFullfilled, onRejected) {
+        Promise.prototype.then = function (onFullfilled, onRejected, onProgress) {
             var result = new Deferred();
             this.$$state.pending = this.$$state.pending || [];
             // 这里 result 作为数组的第一项，隐藏着一个作用。
@@ -15,7 +15,7 @@ function $QProvider() {
             // 怎么传呢？正常的想法是内部一个数组，保存每个 promise ，然后 resolve 的时候 shift 出来
             // 而这里的做法是，将下一个 promise/deferred 保存在 pending 数组里面。当前 promise resolve 之后
             // 直接通过 result 继续 resolve 给下一个 promise
-            this.$$state.pending.push([result, onFullfilled, onRejected]);
+            this.$$state.pending.push([result, onFullfilled, onRejected, onProgress]);
             if (this.$$state.status > 0) {
                 scheduleProcessQueue(this.$$state);
             }
@@ -26,12 +26,12 @@ function $QProvider() {
             return this.then(null, onRejected);
         };
 
-        Promise.prototype.finally = function (callback) {
+        Promise.prototype.finally = function (callback, progressCallback) {
             return this.then(function (value) {
                 return handlerFinallyCallback(callback, value, true);
             }, function (rejection) {
                 return handlerFinallyCallback(callback, rejection, false);
-            });
+            }, progressCallback);
         };
 
         function Deferred() {
@@ -52,7 +52,8 @@ function $QProvider() {
             if (value && _.isFunction(value.then)) {
                 value.then(
                     _.bind(this.resolve, this),
-                    _.bind(this.reject, this)
+                    _.bind(this.reject, this),
+                    _.bind(this.notify, this)
                 );
             } else {
                 this.promise.$$state.value = value;
@@ -68,6 +69,24 @@ function $QProvider() {
             this.promise.$$state.value = reason;
             this.promise.$$state.status = 2;
             scheduleProcessQueue(this.promise.$$state);
+        };
+
+        Deferred.prototype.notify = function (progress) {
+            var pending = this.promise.$$state.pending;
+            if (pending && pending.length && !this.promise.$$state.status) {
+                $rootScope.$evalAsync(function () {
+                    _.forEach(pending, function (handlers) {
+                        var progressCallback = handlers[3];
+                        var deferred = handlers[0];
+                        try {
+                            var value = _.isFunction(progressCallback) ? progressCallback(progress) : progress;
+                            deferred.notify(value);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    });
+                });
+            }
         };
 
         function scheduleProcessQueue(state) {

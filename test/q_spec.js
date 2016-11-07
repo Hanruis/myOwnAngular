@@ -1,7 +1,6 @@
 /* jshint globalstrict: true */
 /* global publishExternalAPI: false, createInjector: false */
 
-'use strict';
 
 describe('$q', function () {
     var $q;
@@ -245,5 +244,27 @@ describe('$q', function () {
         d.resolve(42);
         $rootScope.$apply();
         expect(fulfilledSpy).toHaveBeenCalledWith(42);
+    });
+    it('treats catch return value as resolution', function () {
+        var d = $q.defer();
+        var fulfilledSpy = jasmine.createSpy();
+        d.promise
+            .catch(function () {
+                return 42;
+            })
+            .then(fulfilledSpy);
+        d.reject('fail');
+        $rootScope.$apply();
+        expect(fulfilledSpy).toHaveBeenCalledWith(42);
+    });
+    it('rejects chained promise when handler throws', function () {
+        var d = $q.defer();
+        var rejectedSpy = jasmine.createSpy();
+        d.promise.then(function () {
+            throw 'fail';
+        }).catch(rejectedSpy);
+        d.resolve(42);
+        $rootScope.$apply();
+        expect(rejectedSpy).toHaveBeenCalledWith('fail');
     });
 });

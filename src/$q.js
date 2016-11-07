@@ -1,4 +1,7 @@
 /* jshint globalstrict: true */
+
+'use strict';
+
 function $QProvider() {
     this.$get = ['$rootScope', function ($rootScope) {
         function Promise() {
@@ -6,11 +9,13 @@ function $QProvider() {
         }
 
         Promise.prototype.then = function (onFullfilled, onRejected) {
+            var result = new Deferred();
             this.$$state.pending = this.$$state.pending || [];
-            this.$$state.pending.push([null, onFullfilled, onRejected]);
+            this.$$state.pending.push([result, onFullfilled, onRejected]);
             if (this.$$state.status > 0) {
                 scheduleProcessQueue(this.$$state);
             }
+            return result.promise;
         };
 
         Promise.prototype.catch = function (onRejected) {
@@ -18,9 +23,9 @@ function $QProvider() {
         };
 
         Promise.prototype.finally = function (callback) {
-            return this.then(() => {
+            return this.then(function () {
                 callback();
-            }, () => {
+            }, function () {
                 callback();
             });
         };
@@ -48,16 +53,17 @@ function $QProvider() {
         };
 
         function scheduleProcessQueue(state) {
-            $rootScope.$evalAsync(() => {
+            $rootScope.$evalAsync(function () {
                 processQueue(state);
             });
         }
 
         function processQueue(state) {
-            _.forEach(state.pending, (handlers) => {
-                const fn = handlers[state.status];
+            _.forEach(state.pending, function (handlers) {
+                var deferred = handlers[0];
+                var fn = handlers[state.status];
                 if (_.isFunction(fn)) {
-                    fn(state.value);
+                    deferred.resolve(fn(state.value));
                 }
             });
             // 注意这里不能进行 state.status 的重置。
@@ -72,7 +78,7 @@ function $QProvider() {
         }
 
         return {
-            defer
+            defer: defer
         };
     }];
 }

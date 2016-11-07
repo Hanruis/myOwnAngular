@@ -3,7 +3,7 @@
     "env": {
         "browser": true,
         "node": true,
-        "es6": true,
+        // "es5": true,
         "jasmine":true
     },
     "globals":{
@@ -46,6 +46,9 @@
         "radix": 1,
         "comma-dangle":[2,"never"],
         "no-use-before-define": ["error", { "functions": false, "classes": true }],
-        "no-extend-native": ["error", { "exceptions": ["Promise"] }]
+        "no-extend-native": ["error", { "exceptions": ["Promise"] }],
+        "no-var": "off",
+        "prefer-arrow-callback": "off",
+        "object-shorthand": "off"
     }
 }

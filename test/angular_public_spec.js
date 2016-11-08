@@ -1,5 +1,4 @@
 describe('angularPublic', function () {
-    'use strict';
     it('sets up the angular object and the module loader', function () {
         publishExternalAPI();
         expect(window.angular).toBeDefined();
@@ -25,9 +24,15 @@ describe('angularPublic', function () {
         expect(injector.has('$rootScope')).toBe(true);
     });
 
-    it('set up $q', function() {
+    it('set up $q', function () {
         publishExternalAPI();
         var injector = createInjector(['ng']);
         expect(injector.has('$q')).toBe(true);
+    });
+    it('sets up $http and $httpBackend', function () {
+        publishExternalAPI();
+        var injector = createInjector(['ng']);
+        expect(injector.has('$http')).toBe(true);
+        expect(injector.has('$httpBackend')).toBe(true);
     });
 });

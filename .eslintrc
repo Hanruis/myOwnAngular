@@ -3,12 +3,16 @@
     "env": {
         "browser": true,
         "node": true,
-        // "es5": true,
+        // "sinon": true,
         "jasmine":true
     },
     "globals":{
         "expect":true,
-        "_":true
+        "_":true,
+        "sinon":true,
+        "publishExternalAPI":true,
+        "setupModuleLoader":true,
+        "createInjector":true
     },
     "rules": {
         // 设定缩进为4个空格

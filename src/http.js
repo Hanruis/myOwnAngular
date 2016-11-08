@@ -2,9 +2,40 @@
 
 
 function $HttpProvider() {
+    var defaults = {
+        headers: {
+            common: {
+                Accept: 'application/json, text/plain, */*'
+            },
+            post: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            put: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            patch: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }
+    };
+
+    this.defaults = defaults;
+
     this.$get = ['$httpBackend', '$q', '$rootScope', function ($httpBackend, $q, $rootScope) {
-        return function $http(config) {
+        function $http(requestConfig) {
             var d = $q.defer();
+            var config = _.extend({
+                method: 'GET'
+            }, requestConfig);
+            config.headers = mergeHeaders(requestConfig);
+
+            if (!config.data) {
+                removeContentType(config.headers);
+            }
+
+            $httpBackend(config.method, config.url, config.data, done, config.headers);
+
+            return d.promise;
 
             function done(status, response, statusText) {
                 status = Math.max(status, 0);
@@ -24,9 +55,45 @@ function $HttpProvider() {
                 return status >= 200 && status < 300;
             }
 
-            $httpBackend(config.method, config.url, config.data, done);
+            function mergeHeaders(config) {
+                var reqHeaders = _.extend({}, config.headers);
+                var defHeaders = _.extend(
+                    {},
+                    defaults.headers.common,
+                    defaults.headers[(config.method || 'get').toLowerCase()]
+                );
 
-            return d.promise;
-        };
+                _.forEach(defHeaders, function (value, key) {
+                    var headerExists = _.some(reqHeaders, function (v, k) {
+                        return k.toLowerCase() === key.toLowerCase();
+                    });
+
+                    if (!headerExists) {
+                        reqHeaders[key] = value;
+                    }
+                });
+                return executeHeaderFns(reqHeaders, config);
+            }
+
+            function removeContentType(headers) {
+                _.forEach(config.headers, function (v, k) {
+                    if (k.toLowerCase() === 'content-type') {
+                        delete headers[k];
+                    }
+                });
+            }
+
+            function executeHeaderFns(headers, config) {
+                return _.transform(headers, function (result, v, k) {
+                    if (_.isFunction(v)) {
+                        result[k] = v(config);
+                    }
+                }, headers);
+            }
+        }
+
+        $http.defaults = defaults;
+
+        return $http;
     }];
 }

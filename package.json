@@ -10,6 +10,9 @@
     "grunt": "^0.4.5",
     "grunt-contrib-jshint": "^1.0.0",
     "grunt-contrib-testem": "^0.5.22",
+    "karma": "^1.3.0",
+    "karma-chrome-launcher": "^2.0.0",
+    "karma-jasmine": "^1.0.2",
     "sinon": "^1.17.3"
   },
   "dependencies": {

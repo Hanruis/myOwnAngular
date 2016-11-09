@@ -5,6 +5,26 @@
 // get response headers
 // support promise
 function $HttpProvider() {
+    function isBlob(object) {
+        return object.toString() === '[object Blob]';
+    }
+
+    function isFile(object) {
+        return object.toString() === '[object File]';
+    }
+
+    function isFormData(object) {
+        return object.toString() === '[object FormData]';
+    }
+
+    function isJSONLike(str) {
+        if (/^\{(?!\{)/.test(str)) {
+            return /\}$/.test(str);
+        } else if (/^\[/.test(str)) {
+            return /\]$/.test(str);
+        }
+    }
+
     var defaults = {
         headers: {
             common: {
@@ -20,7 +40,24 @@ function $HttpProvider() {
                 'Content-Type': 'application/json;charset=utf-8'
             }
         },
-        withCredentials: false
+        withCredentials: false,
+        transformRequest: [function (data) {
+            if (_.isObject(data) && !isBlob(data) && !isFile(data) && !isFormData(data)) {
+                return JSON.stringify(data);
+            } else {
+                return data;
+            }
+        }],
+        transformResponse: [function (data, headers, status) {
+            if (_.isString(data)) {
+                var contentType = headers('content-type');
+                if (contentType && contentType.indexOf('application/json') === 0 || isJSONLike(data)) {
+                    return JSON.parse(data);
+                }
+            }
+
+            return data;
+        }]
     };
 
     this.defaults = defaults;
@@ -30,7 +67,7 @@ function $HttpProvider() {
             var config = _.extend({
                 method: 'GET',
                 transformRequest: defaults.transformRequest,
-                transformResponse:defaults.transformResponse
+                transformResponse: defaults.transformResponse
             }, requestConfig);
             config.headers = mergeHeaders(requestConfig);
 

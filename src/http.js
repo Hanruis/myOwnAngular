@@ -1,6 +1,9 @@
 /* jshint globalstrict: true */
 
-
+// method
+// custome request headers
+// get response headers
+// support promise
 function $HttpProvider() {
     var defaults = {
         headers: {
@@ -16,7 +19,8 @@ function $HttpProvider() {
             patch: {
                 'Content-Type': 'application/json;charset=utf-8'
             }
-        }
+        },
+        withCredentials:false
     };
 
     this.defaults = defaults;
@@ -32,8 +36,19 @@ function $HttpProvider() {
             if (!config.data) {
                 removeContentType(config.headers);
             }
+            // 作者这里的实现是。 config.withCredentials === undefined, 并且 defaults.withCredentials !== undefined
+            if (!_.has(config, 'withCredentials')) {
+                config.withCredentials = defaults.withCredentials;
+            }
 
-            $httpBackend(config.method, config.url, config.data, done, config.headers);
+            $httpBackend(
+                config.method,
+                config.url,
+                config.data,
+                done,
+                config.headers,
+                config.withCredentials
+            );
 
             return d.promise;
 

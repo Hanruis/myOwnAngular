@@ -12,7 +12,12 @@ function $HttpBackendProvider() {
             xhr.onload = function () {
                 var response = ('response' in xhr) ? xhr.response : xhr.responseText;
                 var statusText = xhr.statusText || '';
-                callback(xhr.status, response, statusText);
+                callback(
+                    xhr.status,
+                    response,
+                    xhr.getAllResponseHeaders(), // 原来还有这个方法的
+                    statusText
+                );
             };
             xhr.onerror = function () {
                 callback(-1, null, '');

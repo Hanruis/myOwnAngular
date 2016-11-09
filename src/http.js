@@ -37,13 +37,14 @@ function $HttpProvider() {
 
             return d.promise;
 
-            function done(status, response, statusText) {
+            function done(status, response, headerString, statusText) {
                 status = Math.max(status, 0);
                 d[isSuccess(status) ? 'resolve' : 'reject']({
                     status: status,
                     data: response,
                     statusText: statusText,
-                    config
+                    headers:headersGetter(headerString),
+                    config:config
                 });
                 if (!$rootScope.$$phase) {
                     $rootScope.$apply();
@@ -94,6 +95,27 @@ function $HttpProvider() {
                         }
                     }
                 }, headers);
+            }
+
+            function headersGetter(headerString) {
+                // parse headerString
+                var headersObj;
+                return function (key) {
+                    headersObj = headersObj || parseHeaders(headerString);
+                    return key ? headersObj[key.toLowerCase()] : headersObj;
+                };
+            }
+
+            function parseHeaders(headerString) {
+                var lines = headerString.split('\n');
+                return _.transform(lines, function (result, line) {
+                    var pairs = line.split(':');
+                    var key = _.trim(pairs[0].toLowerCase());
+                    var value = _.trim(pairs[1]);
+                    if (key) {
+                        result[key] = value;
+                    }
+                }, {});
             }
         }
 

@@ -86,7 +86,12 @@ function $HttpProvider() {
             function executeHeaderFns(headers, config) {
                 return _.transform(headers, function (result, v, k) {
                     if (_.isFunction(v)) {
-                        result[k] = v(config);
+                        v = v(config);
+                        if (_.isNull(v) || _.isUndefined(v)) {
+                            delete result[k];
+                        } else {
+                            result[k] = v;
+                        }
                     }
                 }, headers);
             }

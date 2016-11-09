@@ -20,7 +20,7 @@ function $HttpProvider() {
                 'Content-Type': 'application/json;charset=utf-8'
             }
         },
-        withCredentials:false
+        withCredentials: false
     };
 
     this.defaults = defaults;
@@ -29,11 +29,17 @@ function $HttpProvider() {
         function $http(requestConfig) {
             var d = $q.defer();
             var config = _.extend({
-                method: 'GET'
+                method: 'GET',
+                transformRequest: defaults.transformRequest
             }, requestConfig);
             config.headers = mergeHeaders(requestConfig);
 
-            if (!config.data) {
+            var reqData = transformData(
+                config.data,
+                headersGetter(config.headers),
+                config.transformRequest
+            );
+            if (_.isUndefined(reqData)) {
                 removeContentType(config.headers);
             }
             // 作者这里的实现是。 config.withCredentials === undefined, 并且 defaults.withCredentials !== undefined
@@ -41,10 +47,11 @@ function $HttpProvider() {
                 config.withCredentials = defaults.withCredentials;
             }
 
+
             $httpBackend(
                 config.method,
                 config.url,
-                config.data,
+                reqData,
                 done,
                 config.headers,
                 config.withCredentials
@@ -58,8 +65,8 @@ function $HttpProvider() {
                     status: status,
                     data: response,
                     statusText: statusText,
-                    headers:headersGetter(headerString),
-                    config:config
+                    headers: headersGetter(headerString),
+                    config: config
                 });
                 if (!$rootScope.$$phase) {
                     $rootScope.$apply();
@@ -73,8 +80,7 @@ function $HttpProvider() {
 
             function mergeHeaders(config) {
                 var reqHeaders = _.extend({}, config.headers);
-                var defHeaders = _.extend(
-                    {},
+                var defHeaders = _.extend({},
                     defaults.headers.common,
                     defaults.headers[(config.method || 'get').toLowerCase()]
                 );
@@ -112,17 +118,24 @@ function $HttpProvider() {
                 }, headers);
             }
 
-            function headersGetter(headerString) {
+            function headersGetter(headers) {
                 // parse headerString
                 var headersObj;
+
                 return function (key) {
-                    headersObj = headersObj || parseHeaders(headerString);
+                    headersObj = headersObj || parseHeaders(headers);
                     return key ? headersObj[key.toLowerCase()] : headersObj;
                 };
             }
 
-            function parseHeaders(headerString) {
-                var lines = headerString.split('\n');
+            function parseHeaders(headers) {
+                if (_.isObject(headers)) {
+                    return _.transform(headers, function (result, v, k) {
+                        result[_.trim(k.toLowerCase())] = _.trim(v);
+                    }, {});
+                }
+
+                var lines = headers.split('\n');
                 return _.transform(lines, function (result, line) {
                     var pairs = line.split(':');
                     var key = _.trim(pairs[0].toLowerCase());
@@ -131,6 +144,18 @@ function $HttpProvider() {
                         result[key] = value;
                     }
                 }, {});
+            }
+
+            function transformData(data, headers, transformFn) {
+                if (_.isFunction(transformFn)) {
+                    return transformFn(data);
+                } else if (_.isArray(transformFn)) {
+                    return _.reduce(transformFn, function (preData, fn) {
+                        return _.isFunction(fn) ? fn(preData, headers) : preData;
+                    }, data);
+                } else {
+                    return data;
+                }
             }
         }
 

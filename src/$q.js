@@ -116,6 +116,8 @@ function qFactory(callLater) {
             // 注意，这里这个 deferred，是下一个 Deferred 了
             var deferred = handlers[0];
             var fn = handlers[state.status];
+            // 注意这样的设计下， reject ，和 resolve 如果返回 promise 的话。
+            // 都在 resolve 里面 then 一下来分发最终的 resolve, reject
             try {
                 if (_.isFunction(fn)) {
                     deferred.resolve(fn(state.value));

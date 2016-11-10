@@ -168,6 +168,27 @@ function $HttpProvider() {
             return _.isString(fn) ? $injector.get(fn) : $injector.invoke(fn);
         });
 
+
+        $http.defaults = defaults;
+        $http.pendingRequests = [];
+        _.forEach(['get', 'head', 'delete'], function (method) {
+            $http[method] = function (url, config) {
+                return $http(_.extend(config, {
+                    method: method.toUpperCase(),
+                    url: url
+                }));
+            };
+        });
+        _.forEach(['post', 'put', 'patch'], function (method) {
+            $http[method] = function (url, data, config) {
+                $http(_.extend(config || {}, {
+                    url: url,
+                    data: data,
+                    method: method.toUpperCase()
+                }));
+            };
+        });
+
         function $http(requestConfig) {
             var config = _.extend({
                 method: 'GET',
@@ -211,6 +232,14 @@ function $HttpProvider() {
         function sendReq(config, reqData) {
             var d = $q.defer();
             var url = buildUrl(config.url, config.paramSerializer(config.params));
+
+            $http.pendingRequests.push(config);
+            d.promise.then(function () {
+                _.remove($http.pendingRequests, config);
+            }, function () {
+                _.remove($http.pendingRequests, config);
+            });
+
             $httpBackend(
                 config.method,
                 url,
@@ -280,26 +309,6 @@ function $HttpProvider() {
                 });
             }
         }
-
-        $http.defaults = defaults;
-        _.forEach(['get', 'head', 'delete'], function (method) {
-            $http[method] = function (url, config) {
-                return $http(_.extend(config, {
-                    method: method.toUpperCase(),
-                    url: url
-                }));
-            };
-        });
-        _.forEach(['post', 'put', 'patch'], function (method) {
-            $http[method] = function (url, data, config) {
-                $http(_.extend(config || {}, {
-                    url: url,
-                    data: data,
-                    method: method.toUpperCase()
-                }));
-            };
-        });
-
 
         return $http;
     }];

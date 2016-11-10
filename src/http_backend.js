@@ -2,8 +2,9 @@
 
 function $HttpBackendProvider() {
     this.$get = function () {
-        return function (method, url, post, callback, headers, withCredentials) {
+        return function (method, url, post, callback, headers, timeout, withCredentials) {
             var xhr = new XMLHttpRequest();
+            var timeoutId;
             xhr.open(method, url, true);
             _.forEach(headers, function (value, key) {
                 xhr.setRequestHeader(key, value);
@@ -15,6 +16,12 @@ function $HttpBackendProvider() {
             xhr.onload = function () {
                 var response = ('response' in xhr) ? xhr.response : xhr.responseText;
                 var statusText = xhr.statusText || '';
+
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+
                 callback(
                     xhr.status,
                     response,
@@ -23,8 +30,24 @@ function $HttpBackendProvider() {
                 );
             };
             xhr.onerror = function () {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+
                 callback(-1, null, '');
             };
+
+
+            if (timeout && timeout.then) {
+                timeout.then(function () {
+                    xhr.abort();
+                });
+            } else if (timeout > 0) {
+                timeoutId = setTimeout(function () {
+                    xhr.abort();
+                }, timeout);
+            }
         };
     };
 }

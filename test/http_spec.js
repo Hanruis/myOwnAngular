@@ -2,7 +2,7 @@
 /* global publishExternalAPI: false, createInjector: false */
 
 
-fdescribe('$http', function () {
+describe('$http', function () {
     var $http;
     var xhr;
     var requests;

@@ -192,6 +192,19 @@ function $HttpProvider() {
                 return prevPromise.then(interceptor.response, interceptor.responseError);
             }, promise);
 
+            promise.success = function (fn) {
+                promise.then(function (response) {
+                    fn(response.data, response.status, response.headers, config);
+                });
+                return promise;
+            };
+            promise.error = function (fn) {
+                promise.catch(function (response) {
+                    fn(response.data, response.status, response.headers, config);
+                });
+                return promise;
+            };
+
             return promise;
         }
 

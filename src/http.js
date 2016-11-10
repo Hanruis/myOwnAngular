@@ -23,7 +23,9 @@ function $HttpProvider() {
         } else if (/^\[/.test(str)) {
             return /\]$/.test(str);
         }
+        return false;
     }
+
 
     var defaults = {
         headers: {
@@ -57,17 +59,19 @@ function $HttpProvider() {
             }
 
             return data;
-        }]
+        }],
+        paramSerializer: '$httpParamSerializer'
     };
 
     this.defaults = defaults;
 
-    this.$get = ['$httpBackend', '$q', '$rootScope', function ($httpBackend, $q, $rootScope) {
+    this.$get = ['$httpBackend', '$q', '$rootScope', '$injector', '$httpParamSerializer', function ($httpBackend, $q, $rootScope, $injector, $httpParamSerializer) {
         function $http(requestConfig) {
             var config = _.extend({
                 method: 'GET',
                 transformRequest: defaults.transformRequest,
-                transformResponse: defaults.transformResponse
+                transformResponse: defaults.transformResponse,
+                paramSerializer: $httpParamSerializer
             }, requestConfig);
             config.headers = mergeHeaders(requestConfig);
 
@@ -114,9 +118,13 @@ function $HttpProvider() {
 
         function sendReq(config, reqData) {
             var d = $q.defer();
+            if (_.isString(config.paramSerializer)) {
+                config.paramSerializer = $injector.get(config.paramSerializer);
+            }
+            var url = buildUrl(config.url, config.paramSerializer(config.params));
             $httpBackend(
                 config.method,
-                config.url,
+                url,
                 reqData,
                 done,
                 config.headers,
@@ -222,5 +230,77 @@ function $HttpProvider() {
                 return data;
             }
         }
+
+        /**
+         * @param {string} url string
+         * @param {string} serializedParams url params string
+         * @return {string} url compelte string
+         */
+        function buildUrl(url, serializedParams) {
+            if (serializedParams.length) {
+                if (_.isString(url)) {
+                    return url + (url.indexOf('?') >= 0 ? '&' : '?') + serializedParams;
+                }
+            } else {
+                return url;
+            }
+
+            return '';
+        }
     }];
+}
+
+
+function $HttpParamSerializerProvider() {
+    this.$get = function () {
+        return function serializeParams(params) {
+            if (_.isString(params)) {
+                return params;
+            }
+            return _.transform(params, function (result, value, key) {
+                if (!_.isNull(value) && !_.isUndefined(value)) {
+                    if (!_.isArray(value)) {
+                        value = [value];
+                    }
+                    _.forEach(value, function (v) {
+                        if (_.isObject(v)) {
+                            v = JSON.stringify(v);
+                        }
+                        result.push(encodeURIComponent(key) + '=' + encodeURIComponent(v));
+                    });
+                }
+                return result;
+            }, []).join('&');
+        };
+    };
+}
+
+function $HttpParamSerializerJQLikeProvider() {
+    this.$get = function () {
+        return function (params) {
+            var parts = [];
+
+
+            function serialize(value, prefix, topLevel) {
+                if (_.isNull(value) || _.isUndefined(value)) {
+                    return;
+                }
+                if (_.isArray(value)) {
+                    _.forEach(value, function (v, i) {
+                        serialize(v, prefix + (_.isObject(v) ? '[' + i + ']' : '[]'));
+                    });
+                } else if (_.isObject(value) && !_.isDate(value)) {
+                    _.forEach(value, function (v, k) {
+                        serialize(v, prefix + (topLevel ? k : '[' + k + ']'));
+                    });
+                } else {
+                    parts.push(
+                        encodeURIComponent(prefix) + '=' + encodeURIComponent(value));
+                }
+            }
+
+            serialize(params, '', true);
+            return parts.join('&');
+        };
+    };
 }

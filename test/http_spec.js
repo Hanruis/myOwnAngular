@@ -862,7 +862,7 @@ fdescribe('$http', function () {
         requests[0].respond(200, {}, 'Hello');
         expect(response.intercepted).toBe(true);
     });
-    it('allows intercepting request errors', function () {
+    fit('allows intercepting request errors', function () {
         var requestErrorSpy = jasmine.createSpy();
         var injector = createInjector(['ng', function ($httpProvider) {
             $httpProvider.interceptors.push(_.constant({

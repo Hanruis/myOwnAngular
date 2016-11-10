@@ -118,6 +118,7 @@ function qFactory(callLater) {
             var fn = handlers[state.status];
             // 注意这样的设计下， reject ，和 resolve 如果返回 promise 的话。
             // 都在 resolve 里面 then 一下来分发最终的 resolve, reject
+            // 注意，这里实现的 promise 没法中断。一旦启动了，就会整个链条执行下去。
             try {
                 if (_.isFunction(fn)) {
                     deferred.resolve(fn(state.value));

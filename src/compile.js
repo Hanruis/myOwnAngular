@@ -44,7 +44,7 @@ function $CompileProvider($provide) {
         }
 
         function directiveNormalize(node) {
-            return _.camelCase(nodeName(node).toLowerCase().replace(/(x|data)(:|-|_)/i, ''));
+            return _.camelCase(nodeName(node).toLowerCase().replace(/(x|data)[:\-_]/i, ''));
         }
 
         return compile;

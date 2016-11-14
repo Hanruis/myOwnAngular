@@ -19,19 +19,27 @@ function $CompileProvider($provide) {
 
         function collectDirectives(node) {
             var directives = [];
-            var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
-            addDirective(normalizedNodeName, directives);
-            _.forEach(node.attributes, function (attr) {
-                var normalizedAttr = directiveNormalize(attr.name.toLowerCase());
-                normalizedAttr = normalizedAttr.replace(/^(ngAttr)/, '').replace(/^(\w)/, function (matched, $1) {
-                    return $1.toLowerCase();
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
+                addDirective(normalizedNodeName, directives);
+                _.forEach(node.attributes, function (attr) {
+                    var normalizedAttr = directiveNormalize(attr.name.toLowerCase());
+                    normalizedAttr = normalizedAttr.replace(/^(ngAttr)/, '').replace(/^(\w)/, function (matched, $1) {
+                        return $1.toLowerCase();
+                    });
+                    addDirective(normalizedAttr, directives);
                 });
-                addDirective(normalizedAttr, directives);
-            });
-            _.forEach(node.classList, function (klass) {
-                var normalizedClassName = directiveNormalize(klass);
-                addDirective(normalizedClassName, directives);
-            });
+                _.forEach(node.classList, function (klass) {
+                    var normalizedClassName = directiveNormalize(klass);
+                    addDirective(normalizedClassName, directives);
+                });
+            } else if (node.nodeType === Node.COMMENT_NODE) {
+                var match = /^\s*directive\:\s*([\d\w\-_]+)/.exec(node.nodeValue);
+                if (match) {
+                    addDirective(directiveNormalize(match[1]), directives);
+                }
+            }
+
             return directives;
         }
 

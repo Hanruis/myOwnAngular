@@ -28,6 +28,10 @@ function $CompileProvider($provide) {
                 });
                 addDirective(normalizedAttr, directives);
             });
+            _.forEach(node.classList, function (klass) {
+                var normalizedClassName = directiveNormalize(klass);
+                addDirective(normalizedClassName, directives);
+            });
             return directives;
         }
 

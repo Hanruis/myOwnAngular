@@ -4,7 +4,8 @@
         "browser": true,
         "node": true,
         // "sinon": true,
-        "jasmine":true
+        "jasmine":true,
+        "jquery": true
     },
     "globals":{
         "expect":true,
@@ -57,6 +58,8 @@
         "vars-on-top": "off",
         "max-len": "off",
         "prefer-template": "off",
-        "linebreak-style": "off"
+        "linebreak-style": "off",
+        "prefer-rest-params": "off",
+        "prefer-spread": "off"
     }
 }

@@ -19,7 +19,7 @@ function $CompileProvider($provide) {
 
         function collectDirectives(node) {
             var directives = [];
-            var normalizedNodeName = _.camelCase(nodeName(node).toLowerCase());
+            var normalizedNodeName = directiveNormalize(node);
             addDirective(normalizedNodeName, directives);
             return directives;
         }
@@ -41,6 +41,10 @@ function $CompileProvider($provide) {
                     directive.compile($node);
                 }
             });
+        }
+
+        function directiveNormalize(node) {
+            return _.camelCase(nodeName(node).toLowerCase().replace(/(x|data)(:|-|_)/i, ''));
         }
 
         return compile;

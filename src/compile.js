@@ -54,6 +54,7 @@ function $CompileProvider($provide) {
                     return dir.restrict.indexOf(mode) !== -1;
                 });
                 directives.push.apply(directives, applicableDirectives);
+                directives.sort(byPriority);
             }
         }
 
@@ -68,6 +69,16 @@ function $CompileProvider($provide) {
 
         function directiveNormalize(name) {
             return _.camelCase(name.replace(/(x|data)[:\-_]/i, ''));
+        }
+
+        function byPriority(a, b) {
+            var diff = b.priority - a.priority;
+            if (diff) {
+                return diff;
+            } else if (a.name !== b.name) {
+                return (a.name < b.name ? -1 : 1);
+            }
+            return a.index - b.index;
         }
 
         return compile;
@@ -87,11 +98,14 @@ function $CompileProvider($provide) {
                 hasDirectives[name] = [];
                 $provide.factory(name + 'Directive', ['$injector', function ($injector) {
                     var factories = hasDirectives[name];
-                    return _.map(factories, function (factory) {
+                    return _.map(factories, function (factory, index) {
                         var directive = $injector.invoke(factory);
                         if (!directive.restrict) {
                             directive.restrict = 'EA';
                         }
+                        directive.priority = directive.priority || 0;
+                        directive.name = directive.name || name;
+                        directive.index = index;
                         return directive;
                     });
                 }]);

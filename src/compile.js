@@ -9,15 +9,16 @@ function $CompileProvider($provide) {
 
         function compileNodes($compileNodes) {
             _.forEach($compileNodes, function (node) {
-                var directives = collectDirectives(node);
-                applyDirectivesToNode(directives, node);
-                if (node.childNodes && node.childNodes.length) {
+                var attrs = {};
+                var directives = collectDirectives(node, attrs);
+                var terminal = applyDirectivesToNode(directives, node);
+                if (!terminal && node.childNodes && node.childNodes.length) {
                     compileNodes(node.childNodes);
                 }
             });
         }
 
-        function collectDirectives(node) {
+        function collectDirectives(node, attrs) {
             var directives = [];
             if (node.nodeType === Node.ELEMENT_NODE) {
                 var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
@@ -27,6 +28,7 @@ function $CompileProvider($provide) {
                     normalizedAttr = normalizedAttr.replace(/^(ngAttr)/, '').replace(/^(\w)/, function (matched, $1) {
                         return $1.toLowerCase();
                     });
+                    attrs[normalizedAttr] = attr.value;
                     addDirective(normalizedAttr, directives, 'A');
                 });
                 _.forEach(node.classList, function (klass) {
@@ -58,13 +60,23 @@ function $CompileProvider($provide) {
             }
         }
 
-        function applyDirectivesToNode(directives, node) {
+        function applyDirectivesToNode(directives, node, attrs) {
             var $node = $(node);
+            var terminalPriority = Number.MIN_SAFE_INTEGER;
+            var terminal = false;
             _.forEach(directives, function (directive) {
+                if (directive.priority < terminalPriority) {
+                    return;
+                }
                 if (directive.compile) {
-                    directive.compile($node);
+                    directive.compile($node, attrs);
+                }
+                if (directive.terminal) {
+                    terminal = true;
+                    terminalPriority = directive.terminal;
                 }
             });
+            return terminal;
         }
 
         function directiveNormalize(name) {

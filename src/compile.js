@@ -23,20 +23,33 @@ function $CompileProvider($provide) {
     };
 
 
-    function Attrs(node) {
-        this.$node = $(node);
-    }
-
-    Attrs.prototype.$set = function (key, value, reflectToElement) {
-        this[key] = value;
-        if (_.has(BOOLEAN_ATTRS, key) && _.has(BOOLEAN_ELEMENTS, this.$node[0].nodeName)) {
-            this.$node.prop(key, value);
-        } else if (reflectToElement !== false) {
-            this.$node.attr(key, value);
-        }
-    };
-
     this.$get = function ($injector) {
+        function Attrs(node) {
+            this.$node = $(node);
+            this.$attr = {};
+        }
+
+        Attrs.prototype.$set = function (key, value, reflectToElement, attrName) {
+            this[key] = value;
+            if (isBooleanAttribute(this.$node[0], key)) {
+                this.$node.prop(key, value);
+            }
+
+            if (!attrName) {
+                if (this.$attr[key]) {
+                    attrName = this.$attr[key];
+                } else {
+                    attrName = this.$attr[key] = _.kebabCase(key);
+                }
+            } else {
+                this.$attr[key] = attrName;
+            }
+
+            if (reflectToElement !== false) {
+                this.$node.attr(attrName, value);
+            }
+        };
+
         function compile($compileNodes) {
             return compileNodes($compileNodes);
         }
@@ -68,7 +81,9 @@ function $CompileProvider($provide) {
                             normalizedAttr[6].toLowerCase() +
                             normalizedAttr.substring(7)
                         );
+                        normalizedAttr = directiveNormalize(name.toLowerCase());
                     }
+                    attrs.$attr[normalizedAttr] = name;
                     var directiveName = normalizedAttr.replace(/(Start|End)$/, '');
                     if (directiveIsMultiElement(directiveName)) {
                         if (/Start$/.test(normalizedAttr)) {

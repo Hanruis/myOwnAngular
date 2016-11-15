@@ -11,7 +11,7 @@ function $CompileProvider($provide) {
             _.forEach($compileNodes, function (node) {
                 var attrs = {};
                 var directives = collectDirectives(node, attrs);
-                var terminal = applyDirectivesToNode(directives, node);
+                var terminal = applyDirectivesToNode(directives, node, attrs);
                 if (!terminal && node.childNodes && node.childNodes.length) {
                     compileNodes(node.childNodes);
                 }
@@ -42,7 +42,7 @@ function $CompileProvider($provide) {
                             name = name.substring(0, name.length - 6);
                         }
                     }
-                    attrs[normalizedAttr] = attr.value;
+                    attrs[normalizedAttr] = attr.value.trim();
                     normalizedAttr = directiveNormalize(name.toLowerCase());
                     addDirective(normalizedAttr, directives, 'A', attrStartName, attrEndName);
                 });

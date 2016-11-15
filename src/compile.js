@@ -23,10 +23,11 @@ function $CompileProvider($provide) {
     };
 
 
-    this.$get = function ($injector) {
+    this.$get = function ($injector, $rootScope) {
         function Attrs(node) {
             this.$node = $(node);
             this.$attr = {};
+            this.$observers = Object.create(null);
         }
 
         Attrs.prototype.$set = function (key, value, reflectToElement, attrName) {
@@ -48,6 +49,31 @@ function $CompileProvider($provide) {
             if (reflectToElement !== false) {
                 this.$node.attr(attrName, value);
             }
+
+            if (this.$observers) {
+                _.forEach(this.$observers[key], function (observer) {
+                    try {
+                        observer(value);
+                    } catch (e) {
+                        console.log(e);
+                    }
+                });
+            }
+        };
+
+        Attrs.prototype.$observe = function (key, fn) {
+            this.$observers[key] = this.$observers[key] || [];
+            this.$observers[key].push(fn);
+            var self = this;
+            $rootScope.$evalAsync(function () {
+                fn(self[key]);
+            });
+            return function () {
+                var index = self.$observers[key].indexOf(fn);
+                if (index >= 0) {
+                    self.$observers[key].splice(index, 1);
+                }
+            };
         };
 
         function compile($compileNodes) {
@@ -212,7 +238,7 @@ function $CompileProvider($provide) {
 
         return compile;
     };
-    this.$get.inject = ['$injector'];
+    this.$get.inject = ['$injector', '$rootScope'];
 
     // 用这种黑魔法来搞的么，卧槽。。
     var hasDirectives = {};

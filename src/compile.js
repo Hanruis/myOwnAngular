@@ -29,7 +29,9 @@ function $CompileProvider($provide) {
 
     Attrs.prototype.$set = function (key, value, reflectToElement) {
         this[key] = value;
-        if (reflectToElement !== false) {
+        if (_.has(BOOLEAN_ATTRS, key) && _.has(BOOLEAN_ELEMENTS, this.$node[0].nodeName)) {
+            this.$node.prop(key, value);
+        } else if (reflectToElement !== false) {
             this.$node.attr(key, value);
         }
     };

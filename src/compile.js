@@ -9,7 +9,7 @@ function $CompileProvider($provide) {
         disabled: true,
         readOnly: true,
         required: true,
-        open:true
+        open: true
     };
 
     var BOOLEAN_ELEMENTS = {
@@ -19,7 +19,7 @@ function $CompileProvider($provide) {
         TEXTAREA: true,
         BUTTON: true,
         FORM: true,
-        DETAILS:true
+        DETAILS: true
     };
 
     this.$get = function ($injector) {
@@ -48,7 +48,8 @@ function $CompileProvider($provide) {
                     var attrEndName;
                     var name = attr.name;
                     var normalizedAttr = directiveNormalize(name.toLowerCase());
-                    if (/^ngAttr[A-Z]/.test(normalizedAttr)) {
+                    var isNgAttr = /^ngAttr[A-Z]/.test(normalizedAttr);
+                    if (isNgAttr) {
                         name = _.kebabCase(
                             normalizedAttr[6].toLowerCase() +
                             normalizedAttr.substring(7)
@@ -62,12 +63,14 @@ function $CompileProvider($provide) {
                             name = name.substring(0, name.length - 6);
                         }
                     }
-                    attrs[normalizedAttr] = attr.value.trim();
-                    if (isBooleanAttribute(node, normalizedAttr)) {
-                        attrs[normalizedAttr] = true;
-                    }
                     normalizedAttr = directiveNormalize(name.toLowerCase());
                     addDirective(normalizedAttr, directives, 'A', attrStartName, attrEndName);
+                    if (isNgAttr || !_.has(attrs, normalizedAttr)) {
+                        attrs[normalizedAttr] = attr.value.trim();
+                        if (isBooleanAttribute(node, normalizedAttr)) {
+                            attrs[normalizedAttr] = true;
+                        }
+                    }
                 });
                 _.forEach(node.classList, function (klass) {
                     var normalizedClassName = directiveNormalize(klass);

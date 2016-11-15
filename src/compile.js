@@ -24,12 +24,27 @@ function $CompileProvider($provide) {
                 var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
                 addDirective(normalizedNodeName, directives, 'E');
                 _.forEach(node.attributes, function (attr) {
-                    var normalizedAttr = directiveNormalize(attr.name.toLowerCase());
-                    normalizedAttr = normalizedAttr.replace(/^(ngAttr)/, '').replace(/^(\w)/, function (matched, $1) {
-                        return $1.toLowerCase();
-                    });
+                    var attrStartName;
+                    var attrEndName;
+                    var name = attr.name;
+                    var normalizedAttr = directiveNormalize(name.toLowerCase());
+                    if (/^ngAttr[A-Z]/.test(normalizedAttr)) {
+                        name = _.kebabCase(
+                            normalizedAttr[6].toLowerCase() +
+                            normalizedAttr.substring(7)
+                        );
+                    }
+                    var directiveName = normalizedAttr.replace(/(Start|End)$/, '');
+                    if (directiveIsMultiElement(directiveName)) {
+                        if (/Start$/.test(normalizedAttr)) {
+                            attrStartName = name;
+                            attrEndName = name.substring(0, name.length - 5) + 'end';
+                            name = name.substring(0, name.length - 6);
+                        }
+                    }
                     attrs[normalizedAttr] = attr.value;
-                    addDirective(normalizedAttr, directives, 'A');
+                    normalizedAttr = directiveNormalize(name.toLowerCase());
+                    addDirective(normalizedAttr, directives, 'A', attrStartName, attrEndName);
                 });
                 _.forEach(node.classList, function (klass) {
                     var normalizedClassName = directiveNormalize(klass);
@@ -49,13 +64,21 @@ function $CompileProvider($provide) {
             return element.nodeName || element[0].nodeName;
         }
 
-        function addDirective(normalizedNodeName, directives, mode) {
+        function addDirective(normalizedNodeName, directives, mode, attrStartName, attrEndName) {
             if (_.has(hasDirectives, normalizedNodeName)) {
                 var foundDirectives = $injector.get(normalizedNodeName + 'Directive');
                 var applicableDirectives = _.filter(foundDirectives, function (dir) {
                     return dir.restrict.indexOf(mode) !== -1;
                 });
-                directives.push.apply(directives, applicableDirectives);
+                _.forEach(applicableDirectives, function (directive) {
+                    if (attrStartName) {
+                        directive = _.create(directive, {
+                            $$start: attrStartName,
+                            $$end: attrEndName
+                        });
+                    }
+                    directives.push(directive);
+                });
                 directives.sort(byPriority);
             }
         }
@@ -65,6 +88,10 @@ function $CompileProvider($provide) {
             var terminalPriority = Number.MIN_SAFE_INTEGER;
             var terminal = false;
             _.forEach(directives, function (directive) {
+                if (directive.$$start) {
+                    $node = groupScan(node, directive.$$start, directive.$$end);
+                }
+
                 if (directive.priority < terminalPriority) {
                     return;
                 }
@@ -91,6 +118,37 @@ function $CompileProvider($provide) {
                 return (a.name < b.name ? -1 : 1);
             }
             return a.index - b.index;
+        }
+
+        function directiveIsMultiElement(directiveName) {
+            if (_.has(hasDirectives, directiveName)) {
+                var directives = $injector.get(directiveName + 'Directive');
+                return _.some(directives, {
+                    multiElement: true
+                });
+            }
+            return false;
+        }
+
+        function groupScan(node, startAttr, endAttr) {
+            var nodes = [];
+            if (startAttr && node && node.hasAttribute(startAttr)) {
+                var depth = 0;
+                do {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.hasAttribute(startAttr)) {
+                            depth++;
+                        } else if (node.hasAttribute(endAttr)) {
+                            depth--;
+                        }
+                    }
+                    nodes.push(node);
+                    node = node.nextSibling;
+                } while (depth > 0);
+            } else {
+                nodes.push(node);
+            }
+            return $(nodes);
         }
 
         return compile;

@@ -2,6 +2,26 @@
 
 
 function $CompileProvider($provide) {
+    var BOOLEAN_ATTRS = {
+        multiple: true,
+        selected: true,
+        checked: true,
+        disabled: true,
+        readOnly: true,
+        required: true,
+        open:true
+    };
+
+    var BOOLEAN_ELEMENTS = {
+        INPUT: true,
+        SELECT: true,
+        OPTION: true,
+        TEXTAREA: true,
+        BUTTON: true,
+        FORM: true,
+        DETAILS:true
+    };
+
     this.$get = function ($injector) {
         function compile($compileNodes) {
             return compileNodes($compileNodes);
@@ -43,6 +63,9 @@ function $CompileProvider($provide) {
                         }
                     }
                     attrs[normalizedAttr] = attr.value.trim();
+                    if (isBooleanAttribute(node, normalizedAttr)) {
+                        attrs[normalizedAttr] = true;
+                    }
                     normalizedAttr = directiveNormalize(name.toLowerCase());
                     addDirective(normalizedAttr, directives, 'A', attrStartName, attrEndName);
                 });
@@ -149,6 +172,10 @@ function $CompileProvider($provide) {
                 nodes.push(node);
             }
             return $(nodes);
+        }
+
+        function isBooleanAttribute(node, attrName) {
+            return BOOLEAN_ATTRS[attrName] && BOOLEAN_ELEMENTS[node.nodeName];
         }
 
         return compile;

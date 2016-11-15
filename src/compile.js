@@ -22,6 +22,18 @@ function $CompileProvider($provide) {
         DETAILS: true
     };
 
+
+    function Attrs(node) {
+        this.$node = $(node);
+    }
+
+    Attrs.prototype.$set = function (key, value, reflectToElement) {
+        this[key] = value;
+        if (reflectToElement !== false) {
+            this.$node.attr(key, value);
+        }
+    };
+
     this.$get = function ($injector) {
         function compile($compileNodes) {
             return compileNodes($compileNodes);
@@ -29,7 +41,7 @@ function $CompileProvider($provide) {
 
         function compileNodes($compileNodes) {
             _.forEach($compileNodes, function (node) {
-                var attrs = {};
+                var attrs = new Attrs(node);
                 var directives = collectDirectives(node, attrs);
                 var terminal = applyDirectivesToNode(directives, node, attrs);
                 if (!terminal && node.childNodes && node.childNodes.length) {

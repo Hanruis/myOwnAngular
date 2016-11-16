@@ -142,9 +142,12 @@ function $CompileProvider($provide) {
                     }
                 }
             } else if (node.nodeType === Node.COMMENT_NODE) {
-                var match = /^\s*directive\:\s*([\d\w\-_]+)/.exec(node.nodeValue);
+                var match = /^\s*directive\:\s*([\d\w\-_]+)\s*(.*)$/.exec(node.nodeValue);
                 if (match) {
-                    addDirective(directiveNormalize(match[1]), directives, 'M');
+                    var normalizedName = directiveNormalize(match[1]);
+                    if (addDirective(directiveNormalize(match[1]), directives, 'M')) {
+                        attrs[normalizedName] = match[2] ? match[2].trim() : undefined;
+                    }
                 }
             }
 

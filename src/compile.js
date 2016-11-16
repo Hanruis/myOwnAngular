@@ -244,12 +244,29 @@ function $CompileProvider($provide) {
             return match;
         }
 
+        // 利用闭包的特性做了很多事情。
         function applyDirectivesToNode(directives, node, attrs) {
             var $node = $(node);
             var terminalPriority = Number.MIN_SAFE_INTEGER;
             var terminal = false;
             var preLinkFns = [];
             var postLinkFns = [];
+
+            function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd) {
+                if (preLinkFn) {
+                    if (attrStart) {
+                        preLinkFn = groupElementsLinkFnWrapper(preLinkFn, attrStart, attrEnd);
+                    }
+                    preLinkFns.push(preLinkFn);
+                }
+                if (postLinkFn) {
+                    if (attrEnd) {
+                        postLinkFn = groupElementsLinkFnWrapper(preLinkFn, attrStart, attrEnd);
+                    }
+                    postLinkFns.push(postLinkFn);
+                }
+            }
+
             _.forEach(directives, function (directive) {
                 if (directive.$$start) {
                     $node = groupScan(node, directive.$$start, directive.$$end);
@@ -261,14 +278,9 @@ function $CompileProvider($provide) {
                 if (directive.compile) {
                     var linkFn = directive.compile($node, attrs);
                     if (_.isFunction(linkFn)) {
-                        postLinkFns.push(linkFn);
+                        addLinkFns(null, linkFn, directive.$$start, directive.$$end);
                     } else if (linkFn) {
-                        if (linkFn.pre) {
-                            preLinkFns.push(linkFn.pre);
-                        }
-                        if (linkFn.post) {
-                            postLinkFns.push(linkFn.post);
-                        }
+                        addLinkFns(linkFn.pre, linkFn.post, directive.$$start, directive.$$end);
                     }
                 }
                 if (directive.terminal) {
@@ -276,6 +288,13 @@ function $CompileProvider($provide) {
                     terminalPriority = directive.terminal;
                 }
             });
+
+            function groupElementsLinkFnWrapper(linkFn, attrStart, attrEnd) {
+                return function (scope, element, attrs) {
+                    var group = groupScan(element[0], attrStart, attrEnd);
+                    return linkFn(scope, group, attrs);
+                };
+            }
 
             function nodeLinkFn(childLinkFn, scope, linkNode) {
                 var $ele = $(linkNode);

@@ -60,6 +60,7 @@
         "prefer-template": "off",
         "linebreak-style": "off",
         "prefer-rest-params": "off",
-        "prefer-spread": "off"
+        "prefer-spread": "off",
+        "one-var-declaration-per-line":"off"
     }
 }

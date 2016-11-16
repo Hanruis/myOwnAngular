@@ -76,6 +76,27 @@ function $CompileProvider($provide) {
             };
         };
 
+        Attrs.prototype.$addClass = function (classVal) {
+            this.$node.addClass(classVal);
+        };
+
+        Attrs.prototype.$removeClass = function (classVal) {
+            this.$node.removeClass(classVal);
+        };
+
+        Attrs.prototype.$updateClass = function (newClassVal, oldClassVal) {
+            var newClasses = newClassVal.split(/\s+/);
+            var oldClasses = oldClassVal.split(/\s+/);
+            var addedClasses = _.difference(newClasses, oldClasses);
+            var removedClasses = _.difference(oldClasses, newClasses);
+            if (addedClasses.length) {
+                this.$addClass(addedClasses.join(' '));
+            }
+            if (removedClasses.length) {
+                this.$removeClass(removedClasses.join(' '));
+            }
+        };
+
         function compile($compileNodes) {
             return compileNodes($compileNodes);
         }

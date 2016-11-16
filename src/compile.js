@@ -118,6 +118,10 @@ function $CompileProvider($provide) {
                 if ((!nodeLinkFn || !nodeLinkFn.terminal) && node.childNodes && node.childNodes.length) {
                     childLinkFn = compileNodes(node.childNodes);
                 }
+                if (nodeLinkFn && nodeLinkFn.scope) {
+                    attrs.$node.addClass('ng-scope');
+                }
+
                 // 通过闭包形式，每个 linkFn 都能够访问到其对应的 node, attrs
                 if (nodeLinkFn || childLinkFn) {
                     linkFns.push({
@@ -137,16 +141,22 @@ function $CompileProvider($provide) {
                 });
 
                 _.forEach(linkFns, function (linkFn) {
+                    var node = stableNodeList[linkFn.idx];
                     if (linkFn.nodeLinkFn) {
+                        if (linkFn.nodeLinkFn.scope) {
+                            scope = scope.$new();
+                            $(node).data('$scope', scope);
+                        }
+
                         linkFn.nodeLinkFn(
                             linkFn.childLinkFn,
                             scope,
-                            stableNodeList[linkFn.idx]
+                            node
                         );
                     } else {
                         linkFn.childLinkFn(
                             scope,
-                            stableNodeList[linkFn.idx].childNodes
+                            node.childNodes
                         );
                     }
                 });
@@ -251,6 +261,7 @@ function $CompileProvider($provide) {
             var terminal = false;
             var preLinkFns = [];
             var postLinkFns = [];
+            var newScope = false;
 
             function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd) {
                 if (preLinkFn) {
@@ -261,7 +272,7 @@ function $CompileProvider($provide) {
                 }
                 if (postLinkFn) {
                     if (attrEnd) {
-                        postLinkFn = groupElementsLinkFnWrapper(preLinkFn, attrStart, attrEnd);
+                        postLinkFn = groupElementsLinkFnWrapper(postLinkFn, attrStart, attrEnd);
                     }
                     postLinkFns.push(postLinkFn);
                 }
@@ -274,6 +285,9 @@ function $CompileProvider($provide) {
 
                 if (directive.priority < terminalPriority) {
                     return;
+                }
+                if (directive.scope) {
+                    newScope = true;
                 }
                 if (directive.compile) {
                     var linkFn = directive.compile($node, attrs);
@@ -311,6 +325,7 @@ function $CompileProvider($provide) {
             }
 
             nodeLinkFn.terminal = terminal;
+            nodeLinkFn.scope = newScope;
 
             return nodeLinkFn;
         }

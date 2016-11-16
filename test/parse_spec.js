@@ -1,11 +1,10 @@
 /* jshint globalstrict: true */
 /* global parse: false */
-"use strict";
 
+'use strict';
 
 
 describe('parse', function () {
-
     var parse;
 
 
@@ -16,25 +15,21 @@ describe('parse', function () {
 
 
     it('can parse an integer', function () {
-        var fn = parse("42");
+        var fn = parse('42');
         expect(fn).toBeDefined();
         expect(fn()).toBe(42);
     });
 
 
-
     it('can parse a floating point number', function () {
         var fn = parse('4.2');
         expect(fn()).toBe(4.2);
-
     });
-
 
 
     it('can parse a floating point number without an integer part', function () {
         var fn = parse('.42');
         expect(fn()).toBe(0.42);
-
     });
 
 
@@ -45,39 +40,32 @@ describe('parse', function () {
 
 
     it('can parse scientific notaion with a float coefficient', function () {
-        var fn = parse(".42e2");
+        var fn = parse('.42e2');
         expect(fn()).toBe(42);
-
     });
 
 
     it('can parse scientific notaion with negative exponents', function () {
         var fn = parse('4200e-2');
         expect(fn()).toBe(42);
-
     });
 
 
-
     it('can parse scientific notaion with the + sign', function () {
-        var fn = parse(".42e+2");
+        var fn = parse('.42e+2');
         expect(fn()).toBe(42);
-
     });
 
 
     it('can parse scientific notaion not carse sensitive', function () {
-        var fn = parse("42E2");
+        var fn = parse('42E2');
         expect(fn()).toBe(4200);
-
     });
-
 
 
     it('can parse  a string in single quotes', function () {
         var fn = parse("'abc'");
         expect(fn()).toEqual('abc');
-
     });
 
 
@@ -85,10 +73,7 @@ describe('parse', function () {
         expect(function () {
             parse('"abc\'');
         }).toThrow();
-
     });
-
-
 
 
     it('can parse a string with single quotes inside', function () {
@@ -97,86 +82,71 @@ describe('parse', function () {
     });
 
 
-
     it('can parse a string width double quotes inside', function () {
         var fn = parse('"a\\\"b"');
         expect(fn()).toEqual('a\"b');
-
     });
 
 
     it('will parse a string width unicode escapes', function () {
         var fn = parse('"\\u00A0"');
         expect(fn()).toEqual('\u00A0');
-
     });
 
 
     it('will not parse a string with invalid unicode escapes', function () {
         expect(function () {
-            parse('"\\u00T0"')
+            parse('"\\u00T0"');
         }).toThrow();
     });
-
 
 
     it('will parse null', function () {
         var fn = parse('null');
         expect(fn()).toBe(null);
-
     });
 
 
-
     it('will parse true', function () {
-        var fn = parse('true')
+        var fn = parse('true');
         expect(fn()).toBe(true);
-
     });
 
 
     it('will parse false', function () {
-        var fn = parse('false')
+        var fn = parse('false');
         expect(fn()).toBe(false);
-
     });
-
 
 
     it('ignores whitespace', function () {
         var fn = parse(' \n42');
         expect(fn()).toBe(42);
-
     });
 
 
-
     it('will parse an empty array', function () {
-        var fn = parse("[]");
+        var fn = parse('[]');
         expect(fn()).toEqual([]);
     });
 
 
     it('will parse a non-empty array', function () {
         var fn = parse('[1,"two",[3], true]');
-        expect(fn()).toEqual([1, "two", [3], true]);
-
+        expect(fn()).toEqual([1, 'two', [3], true]);
     });
 
 
     it('will parse an array with trailing commas', function () {
         var fn = parse('[1,2,3,]');
         expect(fn()).toEqual([1, 2, 3]);
-
     });
 
 
     it('will parse an empty object', function () {
-        var fn = parse("{}");
+        var fn = parse('{}');
         expect(fn()).toEqual({});
-
     });
-
 
 
     it('will parse a non-empty object', function () {
@@ -185,9 +155,7 @@ describe('parse', function () {
             'a key': 1,
             'another-key': 2
         });
-
     });
-
 
 
     it('will parse an object width identifier keys', function () {
@@ -199,37 +167,34 @@ describe('parse', function () {
                 d: 4
             }
         });
-
     });
 
 
-
     it('looks up an attribute from the scope', function () {
-        var fn = parse("akey");
+        var fn = parse('akey');
 
         expect(fn({
-            "akey": 1
+            akey: 1
         })).toBe(1);
         expect(fn({})).toBeUndefined();
     });
 
 
     it('returns undefined when looking up attribute from undefined', function () {
-        var fn = parse("akey");
+        var fn = parse('akey');
         expect(fn()).toBeUndefined();
     });
 
 
-
     it('will parse this', function () {
-        var fn = parse("this");
+        var fn = parse('this');
         var scope = {};
         expect(fn(scope)).toEqual(scope);
         expect(fn()).toBeUndefined();
     });
 
-    it("looks up a 2-part identifier path from the scope", function () {
-        var fn = parse("akey.bkey");
+    it('looks up a 2-part identifier path from the scope', function () {
+        var fn = parse('akey.bkey');
 
         expect(fn({
             akey: {
@@ -242,19 +207,17 @@ describe('parse', function () {
         })).toBeUndefined();
 
         expect(fn({})).toBeUndefined();
-
-    })
+    });
 
 
     it('looks up a member from an object', function () {
-        var fn = parse("{akey:42}.akey");
+        var fn = parse('{akey:42}.akey');
         expect(fn()).toBe(42);
     });
 
 
-
     it('looks up a 4-part identifier path from the scope', function () {
-        var fn = parse("akey.bkey.ckey");
+        var fn = parse('akey.bkey.ckey');
         expect(fn({
             akey: {
                 bkey: {
@@ -262,7 +225,6 @@ describe('parse', function () {
                 }
             }
         })).toBe(10);
-
     });
 
     it('uses locals instead of scope when there is a matching key', function () {
@@ -285,8 +247,6 @@ describe('parse', function () {
             otherKey: 43
         };
         expect(fn(scope, locals)).toBe(42);
-
-
     });
 
 
@@ -297,16 +257,14 @@ describe('parse', function () {
             akey: {
                 bkey: 10
             }
-        }
+        };
 
         var locals = {
             akey: {}
-        }
+        };
 
         expect(fn(scope, locals)).toBeUndefined();
-
     });
-
 
 
     it('parses a simple computed property access', function () {
@@ -321,13 +279,11 @@ describe('parse', function () {
 
 
     it('parses a computed numeric array access', function () {
-        var fn = parse("anArray[1]")
+        var fn = parse('anArray[1]');
         expect(fn({
             anArray: [1, 23, 34]
         })).toBe(23);
-
     });
-
 
 
     it('parse computed access with another access as property', function () {
@@ -338,35 +294,31 @@ describe('parse', function () {
                 dkey: 10
             },
             bkey: {
-                ckey: "dkey"
+                ckey: 'dkey'
             }
         })).toBe(10);
-
     });
 
 
-
     it('parse a function call', function () {
-        var fn = parse("afunction()");
+        var fn = parse('afunction()');
         expect(fn({
             afunction: function () {
-                return 41
+                return 41;
             }
         })).toBe(41);
-
     });
 
 
     it('parse a function call width a single number arguments', function () {
-        var fn = parse("afunction(1)");
+        var fn = parse('afunction(1)');
 
         expect(fn({
             afunction: function (num) {
-                return 41 + num
+                return 41 + num;
             }
         })).toBe(42);
     });
-
 
 
     it('calls methods accessed as computed properties', function () {
@@ -374,11 +326,11 @@ describe('parse', function () {
             anObj: {
                 akey: 10,
                 bfunction: function () {
-                    return this.akey
+                    return this.akey;
                 }
             }
 
-        }
+        };
         var fn = parse("anObj['bfunction']()");
 
         expect(fn(scope)).toBe(10);
@@ -389,30 +341,27 @@ describe('parse', function () {
             anObj: {
                 akey: 10,
                 bfunction: function () {
-                    return this.akey
+                    return this.akey;
                 }
             }
 
-        }
-        var fn = parse("anObj.bfunction()");
+        };
+        var fn = parse('anObj.bfunction()');
 
         expect(fn(scope)).toBe(10);
-
     });
-
 
 
     it('binds bare fucntions to the scope', function () {
         var scope = {
             afunction: function () {
-                return this
+                return this;
             }
-        }
+        };
 
-        var fn = parse("afunction()");
+        var fn = parse('afunction()');
 
         expect(fn(scope)).toBe(scope);
-
     });
 
 
@@ -420,55 +369,50 @@ describe('parse', function () {
         var scope = {};
         var locals = {
             afunction: function () {
-                return this
+                return this;
             }
-        }
+        };
 
-        var fn = parse("afunction()");
+        var fn = parse('afunction()');
 
         expect(fn(scope, locals)).toBe(locals);
-
     });
 
 
     it('parse a simple attribute assignment', function () {
-        var fn = parse("akey = 10");
+        var fn = parse('akey = 10');
         var scope = {};
-        fn(scope)
+        fn(scope);
 
         expect(scope.akey).toBe(10);
-
     });
 
 
-
     it('can assign any primary expression', function () {
-        var fn = parse("akey =  afunction()");
+        var fn = parse('akey =  afunction()');
         var scope = {
             afunction: function () {
-                return 11
+                return 11;
             }
         };
 
-        fn(scope)
+        fn(scope);
         expect(scope.akey).toBe(11);
-
     });
 
 
     it('it can assign computed object property', function () {
-        var fn = parse("akey[\"bkey\"] = ckey[\"dkey\"] ")
+        var fn = parse('akey["bkey"] = ckey["dkey"] ');
         var scope = {
             akey: {},
             ckey: {
                 dkey: 100
             }
-        }
+        };
 
         fn(scope);
 
         expect(scope.akey.bkey).toBe(100);
-
     });
 
     it('can assign a non-computed object property', function () {
@@ -862,7 +806,7 @@ describe('parse', function () {
     it('marks booleans literal', function () {
         var fn = parse('true');
         expect(fn.literal).toBe(true);
-    })
+    });
     it('marks arrays literal', function () {
         var fn = parse('[1, 2, aVariable]');
         expect(fn.literal).toBe(true);
@@ -998,7 +942,6 @@ describe('parse', function () {
     });
 
 
-
     it('can parse filter chain expressions', function () {
         parse = createInjector(['ng', function ($filterProvider) {
             $filterProvider.register('upcase', function () {
@@ -1041,5 +984,4 @@ describe('parse', function () {
         var fn = parse('"hello" | surround:"*":"!"');
         expect(fn()).toEqual('*hello!');
     });
-
-})
+});

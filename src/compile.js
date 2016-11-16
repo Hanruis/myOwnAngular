@@ -127,10 +127,20 @@ function $CompileProvider($provide) {
                         }
                     }
                 });
-                _.forEach(node.classList, function (klass) {
-                    var normalizedClassName = directiveNormalize(klass);
-                    addDirective(normalizedClassName, directives, 'C');
-                });
+
+                // 第一个感觉 class directive 有点扯
+                // 命名有 attr directive ，已经很好能够处理了。
+                // classList 本身有规则，每个 className 间空格隔开。class directive 要在这里里面做出相应 : ; 的处理；
+                var className = node.className;
+                if (_.isString(className) && !_.isEmpty(className)) {
+                    while ((match = /([\d\w\-_]+)(?:\:([^;]+))?;?/.exec(className))) {
+                        var normalizedClassName = directiveNormalize(match[1]);
+                        if (addDirective(normalizedClassName, directives, 'C')) {
+                            attrs[normalizedClassName] = match[2] ? match[2].trim() : undefined;
+                        }
+                        className = className.substr(match.index + match[0].length);
+                    }
+                }
             } else if (node.nodeType === Node.COMMENT_NODE) {
                 var match = /^\s*directive\:\s*([\d\w\-_]+)/.exec(node.nodeValue);
                 if (match) {
@@ -146,6 +156,7 @@ function $CompileProvider($provide) {
         }
 
         function addDirective(normalizedNodeName, directives, mode, attrStartName, attrEndName) {
+            var match = false;
             if (_.has(hasDirectives, normalizedNodeName)) {
                 var foundDirectives = $injector.get(normalizedNodeName + 'Directive');
                 var applicableDirectives = _.filter(foundDirectives, function (dir) {
@@ -159,9 +170,11 @@ function $CompileProvider($provide) {
                         });
                     }
                     directives.push(directive);
+                    match = true;
                 });
                 directives.sort(byPriority);
             }
+            return match;
         }
 
         function applyDirectivesToNode(directives, node, attrs) {

@@ -1561,5 +1561,68 @@ fdescribe('$compile', function () {
                 expect(givenScope.myAttr).toBe(42);
             });
         });
+        it('throws when isolate scope expression returns new arrays', function () {
+            var givenScope;
+            var injector = makeInjectorWithDirectives('myDirective', function () {
+                return {
+                    scope: {
+                        myAttr: '='
+                    },
+                    link: function (scope) {
+                        givenScope = scope;
+                    }
+                };
+            });
+            injector.invoke(function ($compile, $rootScope) {
+                $rootScope.parentFunction = function () {
+                    return [1, 2, 3];
+                };
+                var el = $('<div my-directive my-attr="parentFunction()"></div>');
+                $compile(el)($rootScope);
+                expect(function () {
+                    $rootScope.$digest();
+                }).toThrow();
+            });
+        });
+        it('can watch isolated scope expressions as collections', function () {
+            var givenScope;
+            var injector = makeInjectorWithDirectives('myDirective', function () {
+                return {
+                    scope: {
+                        myAttr: '=*'
+                    },
+                    link: function (scope) {
+                        givenScope = scope;
+                    }
+                };
+            });
+            injector.invoke(function ($compile, $rootScope) {
+                $rootScope.parentFunction = function () {
+                    return [1, 2, 3];
+                };
+                var el = $('<div my-directive my-attr="parentFunction()"></div>');
+                $compile(el)($rootScope);
+                $rootScope.$digest();
+                expect(givenScope.myAttr).toEqual([1, 2, 3]);
+            });
+        });
+        it('does not watch optional missing isolate scope expressions', function () {
+            var givenScope;
+            var injector = makeInjectorWithDirectives('myDirective', function () {
+                return {
+                    scope: {
+                        myAttr: '=?'
+                    },
+                    link: function (scope) {
+                        givenScope = scope;
+                    }
+                };
+            });
+            injector.invoke(function ($compile, $rootScope) {
+                var el = $('<div my-directive></div>');
+                $compile(el)($rootScope);
+                expect($rootScope.$$watchers.length).toBe(0);
+            });
+        });
     });
 });

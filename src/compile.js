@@ -332,6 +332,20 @@ function $CompileProvider($provide) {
                     isolateScope = scope.$new(true);
                     $ele.addClass('ng-isolate-scope');
                     $ele.data('$isolateScope', isolateScope);
+                    _.forEach(newIsolateScopeDirective.$$isolateBindings, function (definition, scopeName) {
+                        switch (definition.mode) {
+                        case '@':
+                            attrs.$observe(definition.attrName, function (newAttrValue) {
+                                isolateScope[scopeName] = newAttrValue;
+                            });
+                            if (attrs[definition.attrName]) {
+                                isolateScope[scopeName] = attrs[definition.attrName];
+                            }
+                            break;
+                        default:
+                            break;
+                        }
+                    });
                 }
                 _.forEach(preLinkFns, function (linkFn) {
                     linkFn(linkFn.isolateScope ? isolateScope : scope, $ele, attrs);
@@ -428,6 +442,9 @@ function $CompileProvider($provide) {
                         if (directive.link && !directive.compile) {
                             directive.compile = _.constant(directive.link);
                         }
+                        if (_.isObject(directive.scope)) {
+                            directive.$$isolateBindings = parseIsolateBindings(directive.scope);
+                        }
                         return directive;
                     });
                 }]);
@@ -444,6 +461,18 @@ function $CompileProvider($provide) {
         return name.replace(/(-\w)/g, function (matched, p1) {
             return p1[1].toUpperCase();
         });
+    }
+
+    function parseIsolateBindings(scope) {
+        var bindings = {};
+        _.forEach(scope, function (definition, scopeName) {
+            var match = definition.match(/\s*(@)\s*(\w*)\s*/);
+            bindings[scopeName] = {
+                mode: match[1],
+                attrName:match[2] || scopeName
+            };
+        });
+        return bindings;
     }
 }
 $CompileProvider.$inject = ['$provide'];

@@ -17,7 +17,7 @@
     },
     "rules": {
         // 设定缩进为4个空格
-        "indent" : [2, 4],
+        "indent" : [1, 4],
         // 允许object键值后有空格，否则对齐等号会报错
         "key-spacing" : 0,
         // function 可以不需要名称，例如，接受Foo.prototype.bar = function () {};

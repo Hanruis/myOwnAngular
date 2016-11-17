@@ -261,19 +261,22 @@ function $CompileProvider($provide) {
             var terminal = false;
             var preLinkFns = [];
             var postLinkFns = [];
-            var newScope = false;
+            var newScope;
+            var newIsolateScopeDirective;
 
-            function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd) {
+            function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd, isolateScope) {
                 if (preLinkFn) {
                     if (attrStart) {
                         preLinkFn = groupElementsLinkFnWrapper(preLinkFn, attrStart, attrEnd);
                     }
+                    preLinkFn.isolateScope = isolateScope;
                     preLinkFns.push(preLinkFn);
                 }
                 if (postLinkFn) {
                     if (attrEnd) {
                         postLinkFn = groupElementsLinkFnWrapper(postLinkFn, attrStart, attrEnd);
                     }
+                    postLinkFn.isolateScope = isolateScope;
                     postLinkFns.push(postLinkFn);
                 }
             }
@@ -287,14 +290,23 @@ function $CompileProvider($provide) {
                     return;
                 }
                 if (directive.scope) {
-                    newScope = true;
+                    if (newIsolateScopeDirective || newScope) {
+                        throw new Error('Multiple directives asking for new/inherited scope');
+                    } else if (_.isObject(directive.scope)) {
+                        newIsolateScopeDirective = directive;
+                    } else {
+                        // 没看懂这里源码，为什么是 directive ，而不是 布尔值。
+                        newScope = newScope || directive;
+                    }
                 }
                 if (directive.compile) {
                     var linkFn = directive.compile($node, attrs);
+                    // 这里也是一样，为什么要这么判断呢？直接判断 _.isObject(directive.scope) 不久好了么。
+                    var isolateScope = (directive === newIsolateScopeDirective);
                     if (_.isFunction(linkFn)) {
-                        addLinkFns(null, linkFn, directive.$$start, directive.$$end);
+                        addLinkFns(null, linkFn, directive.$$start, directive.$$end, isolateScope);
                     } else if (linkFn) {
-                        addLinkFns(linkFn.pre, linkFn.post, directive.$$start, directive.$$end);
+                        addLinkFns(linkFn.pre, linkFn.post, directive.$$start, directive.$$end, isolateScope);
                     }
                 }
                 if (directive.terminal) {
@@ -312,15 +324,24 @@ function $CompileProvider($provide) {
 
             function nodeLinkFn(childLinkFn, scope, linkNode) {
                 var $ele = $(linkNode);
+
+                // 这里看的我目瞪口呆。不同的 directive  isolateScope 竟然是共享的？？？
+                // 看到后面，竟然是有限制的，一个 element 只有一个元素
+                var isolateScope;
+                if (newIsolateScopeDirective) {
+                    isolateScope = scope.$new(true);
+                    $ele.addClass('ng-isolate-scope');
+                    $ele.data('$isolateScope', isolateScope);
+                }
                 _.forEach(preLinkFns, function (linkFn) {
-                    linkFn(scope, $ele, attrs);
+                    linkFn(linkFn.isolateScope ? isolateScope : scope, $ele, attrs);
                 });
 
                 if (childLinkFn) {
                     childLinkFn(scope, linkNode.childNodes);
                 }
                 _.forEachRight(postLinkFns, function (linkFn) {
-                    linkFn(scope, $ele, attrs);
+                    linkFn(linkFn.isolateScope ? isolateScope : scope, $ele, attrs);
                 });
             }
 

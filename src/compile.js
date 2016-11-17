@@ -344,7 +344,6 @@ function $CompileProvider($provide) {
                                 }
                                 break;
                             case '=':
-
                                 if (definition.optional && !attrs[attrName]) {
                                     break;
                                 }
@@ -375,6 +374,15 @@ function $CompileProvider($provide) {
                                     unwatch = scope.$watch(parentValueWatch);
                                 }
                                 isolateScope.$on('$destroy', unwatch);
+                                break;
+                            case '&':
+                                var parentExpr = $parse(attrs[attrName]);
+                                if (parentExpr === _.noop && definition.optional) {
+                                    break;
+                                }
+                                isolateScope[scopeName] = function (args) {
+                                    return parentExpr(scope, args);
+                                };
                                 break;
                             default:
                                 break;
@@ -500,7 +508,7 @@ function $CompileProvider($provide) {
     function parseIsolateBindings(scope) {
         var bindings = {};
         _.forEach(scope, function (definition, scopeName) {
-            var match = definition.match(/\s*(@|=(\*?))(\??)\s*(\w*)\s*/);
+            var match = definition.match(/\s*(@|&|=(\*?))(\??)\s*(\w*)\s*/);
             bindings[scopeName] = {
                 mode: match[1][0],
                 collection: match[2] === '*',

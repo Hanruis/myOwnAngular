@@ -1,4 +1,4 @@
-fdescribe('$compile', function () {
+describe('$compile', function () {
     beforeEach(function () {
         delete window.angular;
         publishExternalAPI();

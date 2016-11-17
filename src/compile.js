@@ -23,7 +23,7 @@ function $CompileProvider($provide) {
     };
 
 
-    this.$get = function ($injector, $rootScope) {
+    this.$get = function ($injector, $rootScope, $parse) {
         function Attrs(node) {
             this.$node = $(node);
             this.$attr = {};
@@ -333,17 +333,40 @@ function $CompileProvider($provide) {
                     $ele.addClass('ng-isolate-scope');
                     $ele.data('$isolateScope', isolateScope);
                     _.forEach(newIsolateScopeDirective.$$isolateBindings, function (definition, scopeName) {
+                        var attrName = definition.attrName;
                         switch (definition.mode) {
-                        case '@':
-                            attrs.$observe(definition.attrName, function (newAttrValue) {
-                                isolateScope[scopeName] = newAttrValue;
-                            });
-                            if (attrs[definition.attrName]) {
-                                isolateScope[scopeName] = attrs[definition.attrName];
-                            }
-                            break;
-                        default:
-                            break;
+                            case '@':
+                                attrs.$observe(attrName, function (newAttrValue) {
+                                    isolateScope[scopeName] = newAttrValue;
+                                });
+                                if (attrs[attrName]) {
+                                    isolateScope[scopeName] = attrs[attrName];
+                                }
+                                break;
+                            case '=':
+                                // 双向绑定开始了→_→。。。
+                                // 注意这里只有一个 watch 在 scope 上。 isolateScope 自身的属性（在这个阶段里面）
+                                // 通过每次 digest 的时候，来对比 parent ， child 里面属性的变化。
+                                // 这里有个问题
+                                var parentGet = $parse(attrs[attrName]);
+                                var lastValue = isolateScope[scopeName] = parentGet(scope);
+                                var parentValueWatch = function () {
+                                    var parentValue = parentGet(scope);
+                                    if (isolateScope[scopeName] !== parentValue) {
+                                        if (parentValue !== lastValue) {
+                                            isolateScope[attrName] = parentValue;
+                                        } else {
+                                            parentValue = isolateScope[scopeName];
+                                            parentGet.assign(scope, parentValue);
+                                        }
+                                    }
+                                    lastValue = parentValue;
+                                    return parentValue;
+                                };
+                                scope.$watch(parentValueWatch);
+                                break;
+                            default:
+                                break;
                         }
                     });
                 }
@@ -416,7 +439,7 @@ function $CompileProvider($provide) {
 
         return compile;
     };
-    this.$get.inject = ['$injector', '$rootScope'];
+    this.$get.inject = ['$injector', '$rootScope', '$parse'];
 
     // 用这种黑魔法来搞的么，卧槽。。
     var hasDirectives = {};
@@ -466,10 +489,10 @@ function $CompileProvider($provide) {
     function parseIsolateBindings(scope) {
         var bindings = {};
         _.forEach(scope, function (definition, scopeName) {
-            var match = definition.match(/\s*(@)\s*(\w*)\s*/);
+            var match = definition.match(/\s*([@=])\s*(\w*)\s*/);
             bindings[scopeName] = {
                 mode: match[1],
-                attrName:match[2] || scopeName
+                attrName: match[2] || scopeName
             };
         });
         return bindings;

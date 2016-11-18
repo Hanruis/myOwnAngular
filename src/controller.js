@@ -3,7 +3,7 @@ function $ControllerProvider() {
     var globals = false;
 
     this.$get = function ($injector) {
-        return function (ctrl, locals) {
+        return function (ctrl, locals, identifier) {
             if (_.isString(ctrl)) {
                 if (_.has(controllers, ctrl)) {
                     ctrl = controllers[ctrl];
@@ -11,8 +11,11 @@ function $ControllerProvider() {
                     ctrl = window[ctrl];
                 }
             }
-
-            return $injector.instantiate(ctrl, locals);
+            var instance = $injector.instantiate(ctrl, locals);
+            if (identifier) {
+                addToScope(locals, identifier, instance);
+            }
+            return instance;
         };
     };
     this.$get.$inject = ['$injector'];
@@ -27,4 +30,13 @@ function $ControllerProvider() {
     this.allowGlobals = function () {
         globals = true;
     };
+
+    function addToScope(locals, identifier, ctrlInstance) {
+        if (locals && _.isObject(locals.$scope)) {
+            locals.$scope[identifier] = ctrlInstance;
+        } else {
+            throw 'Cannot export controller as ' + identifier +
+                '! No $scope object provided via locals';
+        }
+    }
 }

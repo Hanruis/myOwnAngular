@@ -340,7 +340,7 @@ function $CompileProvider($provide) {
                         if (ctrl === '@') {
                             ctrl = attrs[directive.name];
                         }
-                        $controller(ctrl, locals);
+                        $controller(ctrl, locals, directive.controllerAs);
                     });
                 }
 

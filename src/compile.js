@@ -331,11 +331,16 @@ function $CompileProvider($provide) {
 
                 if (controllerDirectives) {
                     _.forEach(controllerDirectives, function (directive) {
+                        var locals = {
+                            $scope: scope,
+                            $element: $ele,
+                            $attrs:attrs
+                        };
                         var ctrl = directive.controller;
                         if (ctrl === '@') {
                             ctrl = attrs[directive.name];
                         }
-                        $controller(ctrl);
+                        $controller(ctrl, locals);
                     });
                 }
 

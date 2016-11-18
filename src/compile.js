@@ -23,7 +23,7 @@ function $CompileProvider($provide) {
     };
 
 
-    this.$get = function ($injector, $rootScope, $parse) {
+    this.$get = function ($injector, $rootScope, $parse, $controller) {
         function Attrs(node) {
             this.$node = $(node);
             this.$attr = {};
@@ -263,7 +263,7 @@ function $CompileProvider($provide) {
             var postLinkFns = [];
             var newScope;
             var newIsolateScopeDirective;
-
+            var controllerDirectives;
             function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd, isolateScope) {
                 if (preLinkFn) {
                     if (attrStart) {
@@ -313,6 +313,10 @@ function $CompileProvider($provide) {
                     terminal = true;
                     terminalPriority = directive.terminal;
                 }
+                if (directive.controller) {
+                    controllerDirectives = controllerDirectives || {};
+                    controllerDirectives[directive.name] = directive;
+                }
             });
 
             function groupElementsLinkFnWrapper(linkFn, attrStart, attrEnd) {
@@ -324,6 +328,16 @@ function $CompileProvider($provide) {
 
             function nodeLinkFn(childLinkFn, scope, linkNode) {
                 var $ele = $(linkNode);
+
+                if (controllerDirectives) {
+                    _.forEach(controllerDirectives, function (directive) {
+                        var ctrl = directive.controller;
+                        if (ctrl === '@') {
+                            ctrl = attrs[directive.name];
+                        }
+                        $controller(ctrl);
+                    });
+                }
 
                 // 这里看的我目瞪口呆。不同的 directive  isolateScope 竟然是共享的？？？
                 // 看到后面，竟然是有限制的，一个 element 只有一个元素
@@ -458,7 +472,7 @@ function $CompileProvider($provide) {
 
         return compile;
     };
-    this.$get.inject = ['$injector', '$rootScope', '$parse'];
+    this.$get.inject = ['$injector', '$rootScope', '$parse', '$controller'];
 
     // 用这种黑魔法来搞的么，卧槽。。
     var hasDirectives = {};

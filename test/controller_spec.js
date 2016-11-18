@@ -91,4 +91,20 @@ fdescribe('$controller', function () {
         expect(controller).toBeDefined();
         expect(controller instanceof window.MyController).toBe(true);
     });
+    it('can return a semi-constructed ctrl when using array injection', function () {
+        var injector = createInjector(['ng', function ($provide) {
+            $provide.constant('aDep', 42);
+        }]);
+        var $controller = injector.get('$controller');
+
+        function MyController(aDep) {
+            this.aDep = aDep;
+            this.constructed = true;
+        }
+        var controller = $controller(['aDep', MyController], null, true);
+        expect(controller.constructed).toBeUndefined();
+        var actualController = controller();
+        expect(actualController.constructed).toBeDefined();
+        expect(actualController.aDep).toBe(42);
+    });
 });

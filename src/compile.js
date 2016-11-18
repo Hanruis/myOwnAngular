@@ -264,6 +264,8 @@ function $CompileProvider($provide) {
             var newScope;
             var newIsolateScopeDirective;
             var controllerDirectives;
+            var controllers = {};
+
             function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd, isolateScope) {
                 if (preLinkFn) {
                     if (attrStart) {
@@ -329,85 +331,54 @@ function $CompileProvider($provide) {
             function nodeLinkFn(childLinkFn, scope, linkNode) {
                 var $ele = $(linkNode);
 
-                if (controllerDirectives) {
-                    _.forEach(controllerDirectives, function (directive) {
-                        var locals = {
-                            $scope: scope,
-                            $element: $ele,
-                            $attrs:attrs
-                        };
-                        var ctrl = directive.controller;
-                        if (ctrl === '@') {
-                            ctrl = attrs[directive.name];
-                        }
-                        $controller(ctrl, locals, directive.controllerAs);
-                    });
-                }
-
                 // 这里看的我目瞪口呆。不同的 directive  isolateScope 竟然是共享的？？？
-                // 看到后面，竟然是有限制的，一个 element 只有一个元素
+                // 看到后面，竟然是有限制的，一个 element 只有一个 scope
                 var isolateScope;
                 if (newIsolateScopeDirective) {
                     isolateScope = scope.$new(true);
                     $ele.addClass('ng-isolate-scope');
                     $ele.data('$isolateScope', isolateScope);
-                    _.forEach(newIsolateScopeDirective.$$isolateBindings, function (definition, scopeName) {
-                        var attrName = definition.attrName;
-                        switch (definition.mode) {
-                            case '@':
-                                attrs.$observe(attrName, function (newAttrValue) {
-                                    isolateScope[scopeName] = newAttrValue;
-                                });
-                                if (attrs[attrName]) {
-                                    isolateScope[scopeName] = attrs[attrName];
-                                }
-                                break;
-                            case '=':
-                                if (definition.optional && !attrs[attrName]) {
-                                    break;
-                                }
+                }
 
-                                // 双向绑定开始了→_→。。。
-                                // 注意这里只有一个 watch 在 scope 上。 isolateScope 自身的属性（在这个阶段里面）
-                                // 通过每次 digest 的时候，来对比 parent ， child 里面属性的变化。
-                                // 这里有个问题
-                                var parentGet = $parse(attrs[attrName]);
-                                var lastValue = isolateScope[scopeName] = parentGet(scope);
-                                var parentValueWatch = function () {
-                                    var parentValue = parentGet(scope);
-                                    if (isolateScope[scopeName] !== parentValue) {
-                                        if (parentValue !== lastValue) {
-                                            isolateScope[attrName] = parentValue;
-                                        } else {
-                                            parentValue = isolateScope[scopeName];
-                                            parentGet.assign(scope, parentValue);
-                                        }
-                                    }
-                                    lastValue = parentValue;
-                                    return parentValue;
-                                };
-                                var unwatch;
-                                if (definition.collection) {
-                                    unwatch = scope.$watchCollection(attrs[attrName], parentValueWatch);
-                                } else {
-                                    unwatch = scope.$watch(parentValueWatch);
-                                }
-                                isolateScope.$on('$destroy', unwatch);
-                                break;
-                            case '&':
-                                var parentExpr = $parse(attrs[attrName]);
-                                if (parentExpr === _.noop && definition.optional) {
-                                    break;
-                                }
-                                isolateScope[scopeName] = function (args) {
-                                    return parentExpr(scope, args);
-                                };
-                                break;
-                            default:
-                                break;
+                if (controllerDirectives) {
+                    _.forEach(controllerDirectives, function (directive) {
+                        var locals = {
+                            $scope: directive === newIsolateScopeDirective ? isolateScope : scope,
+                            $element: $ele,
+                            $attrs: attrs
+                        };
+                        var ctrl = directive.controller;
+                        if (ctrl === '@') {
+                            ctrl = attrs[directive.name];
                         }
+                        controllers[directive.name] = $controller(ctrl, locals, true, directive.controllerAs);
                     });
                 }
+
+                if (newIsolateScopeDirective) {
+                    initializeDirectiveBindings(
+                        scope,
+                        attrs,
+                        isolateScope,
+                        newIsolateScopeDirective.$$bindings.isolateScope,
+                        isolateScope
+                    );
+                }
+
+                var scopeDirective = newIsolateScopeDirective || newScope;
+                if (scopeDirective && controllers[scopeDirective.name]) {
+                    initializeDirectiveBindings(
+                        scope,
+                        attrs,
+                        controllers[scopeDirective.name].instance,
+                        scopeDirective.$$bindings.bindToController,
+                        isolateScope
+                    );
+                }
+
+                _.forEach(controllers, function (controller) {
+                    controller();
+                });
                 _.forEach(preLinkFns, function (linkFn) {
                     linkFn(linkFn.isolateScope ? isolateScope : scope, $ele, attrs);
                 });
@@ -424,6 +395,65 @@ function $CompileProvider($provide) {
             nodeLinkFn.scope = newScope;
 
             return nodeLinkFn;
+        }
+
+        function initializeDirectiveBindings(scope, attrs, destination, bindings, newScope) {
+            _.forEach(bindings, function (definition, scopeName) {
+                var attrName = definition.attrName;
+                switch (definition.mode) {
+                    case '@':
+                        attrs.$observe(attrName, function (newAttrValue) {
+                            destination[scopeName] = newAttrValue;
+                        });
+                        if (attrs[attrName]) {
+                            destination[scopeName] = attrs[attrName];
+                        }
+                        break;
+                    case '=':
+                        if (definition.optional && !attrs[attrName]) {
+                            break;
+                        }
+
+                        // 双向绑定开始了→_→。。。
+                        // 注意这里只有一个 watch 在 scope 上。 destination 自身的属性（在这个阶段里面）
+                        // 通过每次 digest 的时候，来对比 parent ， child 里面属性的变化。
+                        // 这里有个问题
+                        var parentGet = $parse(attrs[attrName]);
+                        var lastValue = destination[scopeName] = parentGet(scope);
+                        var parentValueWatch = function () {
+                            var parentValue = parentGet(scope);
+                            if (destination[scopeName] !== parentValue) {
+                                if (parentValue !== lastValue) {
+                                    destination[attrName] = parentValue;
+                                } else {
+                                    parentValue = destination[scopeName];
+                                    parentGet.assign(scope, parentValue);
+                                }
+                            }
+                            lastValue = parentValue;
+                            return parentValue;
+                        };
+                        var unwatch;
+                        if (definition.collection) {
+                            unwatch = scope.$watchCollection(attrs[attrName], parentValueWatch);
+                        } else {
+                            unwatch = scope.$watch(parentValueWatch);
+                        }
+                        newScope.$on('$destroy', unwatch);
+                        break;
+                    case '&':
+                        var parentExpr = $parse(attrs[attrName]);
+                        if (parentExpr === _.noop && definition.optional) {
+                            break;
+                        }
+                        destination[scopeName] = function (args) {
+                            return parentExpr(scope, args);
+                        };
+                        break;
+                    default:
+                        break;
+                }
+            });
         }
 
         function directiveNormalize(name) {
@@ -503,9 +533,7 @@ function $CompileProvider($provide) {
                         if (directive.link && !directive.compile) {
                             directive.compile = _.constant(directive.link);
                         }
-                        if (_.isObject(directive.scope)) {
-                            directive.$$isolateBindings = parseIsolateBindings(directive.scope);
-                        }
+                        directive.$$bindings = parseDirectiveBindings(directive);
                         return directive;
                     });
                 }]);
@@ -531,10 +559,26 @@ function $CompileProvider($provide) {
             bindings[scopeName] = {
                 mode: match[1][0],
                 collection: match[2] === '*',
-                optional:match[3],
+                optional: match[3],
                 attrName: match[4] || scopeName
             };
         });
+        return bindings;
+    }
+
+    function parseDirectiveBindings(directive) {
+        var bindings = {};
+        if (_.isObject(directive.scope)) {
+            if (directive.bindToController) {
+                bindings.bindToController = parseIsolateBindings(directive.scope);
+            } else {
+                bindings.isolateScope = parseIsolateBindings(directive.scope);
+            }
+        }
+        if (_.isObject(directive.bindToController)) {
+            bindings.bindToController =
+                parseIsolateBindings(directive.bindToController);
+        }
         return bindings;
     }
 }

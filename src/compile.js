@@ -340,7 +340,8 @@ function $CompileProvider($provide) {
                 if (_.isArray(require)) {
                     return _.map(require, getControllers);
                 }
-                var match = require.match(/^(\^\^?)?/);
+                var match = require.match(/^(\^\^?)?(\?)?(\^\^?)?/);
+                var optional = match[2];
                 require = require.substring(match[0].length);
                 if (match[1]) {
                     if (match[1] === '^^') {
@@ -357,11 +358,11 @@ function $CompileProvider($provide) {
                 } else if (controllers[require]) {
                     value = controllers[require].instance;
                 }
-                if (!value) {
+                if (!value && !optional) {
                     throw 'Controller ' + require + ' required by directive, cannot be found!';
                 }
 
-                return value;
+                return value || null;
             }
 
             function nodeLinkFn(childLinkFn, scope, linkNode) {

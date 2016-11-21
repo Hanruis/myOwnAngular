@@ -565,6 +565,7 @@ function $CompileProvider($provide) {
                             directive.compile = _.constant(directive.link);
                         }
                         directive.$$bindings = parseDirectiveBindings(directive);
+                        directive.require = directive.require || (directive.controller && name);
                         return directive;
                     });
                 }]);

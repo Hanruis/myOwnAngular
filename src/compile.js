@@ -335,13 +335,29 @@ function $CompileProvider($provide) {
                 };
             }
 
-            function getControllers(require) {
+            function getControllers(require, $node) {
                 var value;
                 if (_.isArray(require)) {
-                    value = _.map(require, getControllers);
+                    return _.map(require, getControllers);
+                }
+                var match = require.match(/^(\^\^?)?/);
+                require = require.substring(match[0].length);
+                if (match[1]) {
+                    if (match[1] === '^^') {
+                        $node = $node.parent();
+                    }
+                    while ($node.length) {
+                        value = $node.data('$' + require + 'Controller');
+                        if (value) {
+                            break;
+                        } else {
+                            $node = $node.parent();
+                        }
+                    }
                 } else if (controllers[require]) {
                     value = controllers[require].instance;
-                } else {
+                }
+                if (!value) {
                     throw 'Controller ' + require + ' required by directive, cannot be found!';
                 }
 
@@ -372,6 +388,7 @@ function $CompileProvider($provide) {
                             ctrl = attrs[directive.name];
                         }
                         controllers[directive.name] = $controller(ctrl, locals, true, directive.controllerAs);
+                        $node.data('$' + directive.name + 'Controller', controllers[directive.name].instance);
                     });
                 }
 
@@ -404,7 +421,7 @@ function $CompileProvider($provide) {
                         linkFn.isolateScope ? isolateScope : scope,
                         $ele,
                         attrs,
-                        linkFn.require && getControllers(linkFn.require)
+                        linkFn.require && getControllers(linkFn.require, $node)
                     );
                 });
 
@@ -416,7 +433,7 @@ function $CompileProvider($provide) {
                         linkFn.isolateScope ? isolateScope : scope,
                         $ele,
                         attrs,
-                        linkFn.require && getControllers(linkFn.require)
+                        linkFn.require && getControllers(linkFn.require, $node)
                     );
                 });
             }

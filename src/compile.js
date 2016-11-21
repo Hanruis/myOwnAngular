@@ -338,12 +338,7 @@ function $CompileProvider($provide) {
             function getControllers(require) {
                 var value;
                 if (_.isArray(require)) {
-                    value = _.map(require, function (requiredCtrl) {
-                        if (controllers[requiredCtrl]) {
-                            return controllers[requiredCtrl].instance;
-                        }
-                        throw 'Controller ' + require + ' required by directive, cannot be found!';
-                    });
+                    value = _.map(require, getControllers);
                 } else if (controllers[require]) {
                     value = controllers[require].instance;
                 } else {

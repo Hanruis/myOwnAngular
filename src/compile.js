@@ -206,6 +206,7 @@ function $CompileProvider($provide) {
                 // 命名有 attr directive ，已经很好能够处理了。
                 // classList 本身有规则，每个 className 间空格隔开。class directive 要在这里里面做出相应 : ; 的处理；
                 var className = node.className;
+                var match;
                 if (_.isString(className) && !_.isEmpty(className)) {
                     while ((match = /([\d\w\-_]+)(?:\:([^;]+))?;?/.exec(className))) {
                         var normalizedClassName = directiveNormalize(match[1]);
@@ -216,7 +217,7 @@ function $CompileProvider($provide) {
                     }
                 }
             } else if (node.nodeType === Node.COMMENT_NODE) {
-                var match = /^\s*directive\:\s*([\d\w\-_]+)\s*(.*)$/.exec(node.nodeValue);
+                match = /^\s*directive\:\s*([\d\w\-_]+)\s*(.*)$/.exec(node.nodeValue);
                 if (match) {
                     var normalizedName = directiveNormalize(match[1]);
                     if (addDirective(directiveNormalize(match[1]), directives, 'M')) {
@@ -266,12 +267,13 @@ function $CompileProvider($provide) {
             var controllerDirectives;
             var controllers = {};
 
-            function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd, isolateScope) {
+            function addLinkFns(preLinkFn, postLinkFn, attrStart, attrEnd, isolateScope, require) {
                 if (preLinkFn) {
                     if (attrStart) {
                         preLinkFn = groupElementsLinkFnWrapper(preLinkFn, attrStart, attrEnd);
                     }
                     preLinkFn.isolateScope = isolateScope;
+                    preLinkFn.require = require;
                     preLinkFns.push(preLinkFn);
                 }
                 if (postLinkFn) {
@@ -279,6 +281,7 @@ function $CompileProvider($provide) {
                         postLinkFn = groupElementsLinkFnWrapper(postLinkFn, attrStart, attrEnd);
                     }
                     postLinkFn.isolateScope = isolateScope;
+                    postLinkFn.require = require;
                     postLinkFns.push(postLinkFn);
                 }
             }
@@ -292,12 +295,15 @@ function $CompileProvider($provide) {
                     return;
                 }
                 if (directive.scope) {
-                    if (newIsolateScopeDirective || newScope) {
-                        throw new Error('Multiple directives asking for new/inherited scope');
-                    } else if (_.isObject(directive.scope)) {
+                    if (_.isObject(directive.scope)) {
+                        if (newIsolateScopeDirective || newScope) {
+                            throw new Error('Multiple directives asking for new/inherited scope');
+                        }
                         newIsolateScopeDirective = directive;
                     } else {
-                        // 没看懂这里源码，为什么是 directive ，而不是 布尔值。
+                        if (newIsolateScopeDirective) {
+                            throw new Error('Multiple directives asking for new/inherited scope');
+                        }
                         newScope = newScope || directive;
                     }
                 }
@@ -305,10 +311,11 @@ function $CompileProvider($provide) {
                     var linkFn = directive.compile($node, attrs);
                     // 这里也是一样，为什么要这么判断呢？直接判断 _.isObject(directive.scope) 不久好了么。
                     var isolateScope = (directive === newIsolateScopeDirective);
+                    var require = directive.require;
                     if (_.isFunction(linkFn)) {
-                        addLinkFns(null, linkFn, directive.$$start, directive.$$end, isolateScope);
+                        addLinkFns(null, linkFn, directive.$$start, directive.$$end, isolateScope, require);
                     } else if (linkFn) {
-                        addLinkFns(linkFn.pre, linkFn.post, directive.$$start, directive.$$end, isolateScope);
+                        addLinkFns(linkFn.pre, linkFn.post, directive.$$start, directive.$$end, isolateScope, require);
                     }
                 }
                 if (directive.terminal) {
@@ -326,6 +333,24 @@ function $CompileProvider($provide) {
                     var group = groupScan(element[0], attrStart, attrEnd);
                     return linkFn(scope, group, attrs);
                 };
+            }
+
+            function getControllers(require) {
+                var value;
+                if (_.isArray(require)) {
+                    value = _.map(require, function (requiredCtrl) {
+                        if (controllers[requiredCtrl]) {
+                            return controllers[requiredCtrl].instance;
+                        }
+                        throw 'Controller ' + require + ' required by directive, cannot be found!';
+                    });
+                } else if (controllers[require]) {
+                    value = controllers[require].instance;
+                } else {
+                    throw 'Controller ' + require + ' required by directive, cannot be found!';
+                }
+
+                return value;
             }
 
             function nodeLinkFn(childLinkFn, scope, linkNode) {
@@ -380,14 +405,24 @@ function $CompileProvider($provide) {
                     controller();
                 });
                 _.forEach(preLinkFns, function (linkFn) {
-                    linkFn(linkFn.isolateScope ? isolateScope : scope, $ele, attrs);
+                    linkFn(
+                        linkFn.isolateScope ? isolateScope : scope,
+                        $ele,
+                        attrs,
+                        linkFn.require && getControllers(linkFn.require)
+                    );
                 });
 
                 if (childLinkFn) {
                     childLinkFn(scope, linkNode.childNodes);
                 }
                 _.forEachRight(postLinkFns, function (linkFn) {
-                    linkFn(linkFn.isolateScope ? isolateScope : scope, $ele, attrs);
+                    linkFn(
+                        linkFn.isolateScope ? isolateScope : scope,
+                        $ele,
+                        attrs,
+                        linkFn.require && getControllers(linkFn.require)
+                    );
                 });
             }
 
@@ -504,6 +539,7 @@ function $CompileProvider($provide) {
         function isBooleanAttribute(node, attrName) {
             return BOOLEAN_ATTRS[attrName] && BOOLEAN_ELEMENTS[node.nodeName];
         }
+
 
         return compile;
     };

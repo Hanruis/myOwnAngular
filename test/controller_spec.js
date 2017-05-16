@@ -1,4 +1,4 @@
-fdescribe('$controller', function () {
+describe('$controller', function () {
     beforeEach(function () {
         delete window.angular;
         publishExternalAPI();

@@ -5,6 +5,9 @@ function $ControllerProvider() {
     this.$get = function ($injector) {
         return function (ctrl, locals, later, identifier) {
             if (_.isString(ctrl)) {
+                var match = ctrl.match(/^(\S+)(\s+as\s+(\w+))?/);
+                ctrl = match[1];
+                identifier = identifier || match[3];
                 if (_.has(controllers, ctrl)) {
                     ctrl = controllers[ctrl];
                 } else if (globals) {

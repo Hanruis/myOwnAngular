@@ -1693,7 +1693,7 @@ describe('$compile', function () {
             });
         });
     });
-    fdescribe('controllers', function () {
+    describe('controllers', function () {
         it('can be attached to directives as functions', function () {
             var controllerInvoked;
             var injector = makeInjectorWithDirectives('myDirective', function () {

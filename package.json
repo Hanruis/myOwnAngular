@@ -2,7 +2,7 @@
   "name": "my-own-angularjs",
   "verson": "0.0.1",
   "devDependencies": {
-    "eslint": "^3.9.1",
+    "eslint": "^4.18.2",
     "eslint-config-airbnb": "^12.0.0",
     "eslint-plugin-import": "^2.1.0",
     "eslint-plugin-jsx-a11y": "^2.2.3",
